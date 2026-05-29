@@ -4,14 +4,25 @@
     "author": "Hunter Tiger Davis",
     "version": "0.1",
     "action": {
-        "default_popup": "index.html"
+        "default_popup": "index.html",
+        "default_icon": {
+            "64": "icons/icon64.png",
+            "128": "icons/icon128.png"
+        }
     },
     "background": {
         "service_worker": "background.js",
         "type": "module"
     },
     "host_permissions": [
+        // specified git sites:
         "http://github.com/*",
+        "https://github.com/*",
+        "http://gitlab.com/*",
+        "https://gitlab.com/*",
+        "http://bitbucket.org/*",
+        "https://bitbucket.org/*",
+        // allows permissions on ALL sites:
         "http://*/*/",
         "https://*/*/"
     ],
@@ -21,7 +32,7 @@
         // "storage",
         // "notifications"
         // TODO: permissions for scanning PR page to compile links
-        
+
     ],
     "icons": {
         "64": "icons/icon64.png",
