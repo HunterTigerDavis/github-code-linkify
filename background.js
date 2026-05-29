@@ -4,12 +4,12 @@ chrome.runtime.onInstalled.addListener(() => {
     console.log("Extension loaded, popup triggered");
 });
 
-// Detect ticket/concert sites and show badge
+// Detect git sites and show badge on extension icon for visibility
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
     if (!tab.url) return;
 
     const url = tab.url.toLowerCase();
-    const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org'];
+    const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git' ];
 
     if (gitSites.some(site => url.includes(site))) {
         chrome.action.setBadgeText({ text: "!", tabId });
@@ -19,4 +19,16 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
         // Clear badge on non-git sites
         chrome.action.setBadgeText({ text: "", tabId });
     }
+});
+
+// Listen for github PR site, trigger notification, tab context to scan for links
+
+// extension icon click listener to trigger popup and scan current tab for links, then display in popup
+chrome.action.onClicked.addListener(tab => {
+    chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+            alert("Extension icon clicked! Scanning for clickable links...");
+        }
+    });
 });

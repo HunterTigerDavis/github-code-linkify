@@ -10,10 +10,18 @@
         "service_worker": "background.js",
         "type": "module"
     },
+    "host_permissions": [
+        "http://github.com/*",
+        "http://*/*/",
+        "https://*/*/"
+    ],
     "permissions": [
-        "tabs",
-        "storage",
-        "notifications"
+        "scripting", // needed to execute scripts in the context of the page
+        "tabs"
+        // "storage",
+        // "notifications"
+        // TODO: permissions for scanning PR page to compile links
+        
     ],
     "icons": {
         "64": "icons/icon64.png",
