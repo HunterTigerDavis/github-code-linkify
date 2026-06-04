@@ -16,5 +16,8 @@
       "onFail": "download"
     }
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@types/chrome": "^0.1.42"
+  }
 }

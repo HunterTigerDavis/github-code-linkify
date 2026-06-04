@@ -1,18 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Link Clicker for Pull Requests</title>
 </head>
+
 <body>
-    <div class="URLs">
-        <h3>URLs found on page:</h3>
+    <div class="header" width="100%" style="display: flex; align-items: center; gap: 10px;">
+        <img src="icons/icon64.png" alt="Extension Icon" width="64" height="64">
+        <h1>GitHub Link Clicker Extension</h1>
     </div>
-    
+    <div class="subheader">
+        <p>This extension scans the current page for links and displays them in a popup. Click on any link to open it in a new tab!</p>
+        <button id="myButton">Test alert</button>
+        <button id="scanButton">Scan Links</button>
+        <script src="script.js"></script>
+    </div>
+    <div class="URLs">
+        <h3>URLs found on tab:</h3>
+        <ul id="urlList">
+            <li>Insert list of URLs here</li>
+        </ul>
+    </div>
+    </div>
 </body>
-<script class="links" src="script.js"></script>
+<!-- <script class="links" src="script.js"></script> -->
 
 <!-- Favicon credit URL: -->
 <!-- <a href="https://www.flaticon.com/free-icons/hyperlink" title="hyperlink icons">Hyperlink icons created by Freepik - Flaticon</a> -->
+
 </html>
