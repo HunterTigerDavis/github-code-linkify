@@ -1,1 +1,4 @@
-"node_modules" 
+node_modules/
+.modules.yaml
+.pnpm-workspace-state-v1.json
+.pnpm-store/

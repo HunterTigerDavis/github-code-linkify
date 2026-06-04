@@ -23,12 +23,13 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 
 // Listen for github PR site, trigger notification, tab context to scan for links
 
+
 // extension icon click listener to trigger popup and scan current tab for links, then display in popup
-chrome.action.onClicked.addListener(tab => {
-    chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-            alert("Extension icon clicked! Scanning for clickable links...");
-        }
-    });
-});
+// chrome.action.onClicked.addListener(tab => {
+//     chrome.scripting.executeScript({
+//         target: { tabId: tab.id },
+//         func: () => {
+//             alert("Extension icon clicked! Scanning for clickable links...");
+//         }
+//     });
+// });
