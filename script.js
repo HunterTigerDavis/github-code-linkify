@@ -17,13 +17,13 @@ async function scanPageForLinks() {
             console.log("Filtered links (same base URL):", filteredLinks);
 
             // read links from github PR page: textarea id="read-only-cursor-text-area" aria-label="file content"
-            
+
         }
     });
 }
 document.getElementById("scanButton").addEventListener("click", scanPageForLinks);
 
-
+// TODO: message passing
 // listen for messages from the content script and display links in the popup
 function handleMessage(request, sender, sendResponse) {
     if (request.type === 'links') {
