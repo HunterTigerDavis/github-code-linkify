@@ -59,6 +59,22 @@ function getFullLineUnderMouse(event) {
   };
 }
 
+// Helper function to apply highlight styles
+function applyHighlight(element) {
+  element.style.setProperty('cursor', 'pointer', 'important');
+  element.style.setProperty('color', '#ff6b00', 'important');
+  element.style.setProperty('text-decoration', 'underline', 'important');
+  element.style.setProperty('text-decoration-color', '#ff6b00', 'important');
+}
+
+// Helper function to remove highlight styles
+function removeHighlight(element) {
+  element.style.removeProperty('cursor');
+  element.style.removeProperty('color');
+  element.style.removeProperty('text-decoration');
+  element.style.removeProperty('text-decoration-color');
+}
+
 // 1. Global Mouse Tracking: Detect URLs anywhere on the page
 document.addEventListener('mousemove', (event) => {
   if (!isCodeAwarePage()) return;
@@ -68,11 +84,7 @@ document.addEventListener('mousemove', (event) => {
   // TODO: better edge detection of URLs, starting with http:// or www., ending with quote or *, brackets, etc.
   // removing * & /* from path when navigating to go to base URL, not highlighting entire commented line or tag with <a href="url">, etc.
   if (targetLine && urlRegex.test(targetLine.text)) {
-    // If the flat line has a plaintext URL or commented URL, turn the row orange
-    targetLine.element.style.setProperty('cursor', 'pointer', 'important');
-    targetLine.element.style.setProperty('color', '#ff6b00', 'important');
-    targetLine.element.style.setProperty('text-decoration', 'underline', 'important');
-    targetLine.element.style.setProperty('text-decoration-color', '#ff6b00', 'important');
+    applyHighlight(targetLine.element);
   }
 });
 
@@ -80,10 +92,7 @@ document.addEventListener('mousemove', (event) => {
 document.addEventListener('mouseout', (event) => {
   const codeLineContainer = event.target.closest('td, span, .blob-code-inner, .react-file-line-composition');
   if (codeLineContainer) {
-    codeLineContainer.style.removeProperty('cursor');
-    codeLineContainer.style.removeProperty('color');
-    codeLineContainer.style.removeProperty('text-decoration');
-    codeLineContainer.style.removeProperty('text-decoration-color');
+    removeHighlight(codeLineContainer);
   }
 });
 
