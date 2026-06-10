@@ -1,4 +1,5 @@
 // Call active script to scan page for links when popup is opened
+// TODO: move to background script and trigger on extension icon click or popup open, then send links to popup for display?
 async function scanPageForLinks() {
     let [tab] = await chrome.tabs.query({ active: true });
     chrome.scripting.executeScript({
@@ -16,7 +17,7 @@ async function scanPageForLinks() {
             console.log("Filtered links (same base URL):", filteredLinks);
 
             // read links from github PR page: textarea id="read-only-cursor-text-area" aria-label="file content"
-
+            
         }
     });
 }
@@ -26,6 +27,7 @@ document.getElementById("scanButton").addEventListener("click", scanPageForLinks
 // listen for messages from the content script and display links in the popup
 function handleMessage(request, sender, sendResponse) {
     if (request.type === 'links') {
+        // test
         const links = request.data;
         const linksList = document.getElementById("linksList");
         linksList.innerHTML = ""; // Clear previous links

@@ -13,6 +13,7 @@
     "permissions": [
         "scripting", // needed to execute scripts in the context of the page
         "tabs",
+        // "activeTab", 
         // "storage",
         "notifications"
         // TODO: additional permissions for scanning PR page to compile links
@@ -22,6 +23,12 @@
         "service_worker": "background.js",
         "type": "module"
     },
+    "content_scripts": [
+        {
+            "matches": [ "https://github.com*", "https://github.com" ],
+            "js": ["script.js"]
+        }
+    ],
     "host_permissions": [
         // specified git sites:
         "http://github.com/*",

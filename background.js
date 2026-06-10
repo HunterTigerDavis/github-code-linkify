@@ -10,11 +10,14 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 
     const url = tab.url.toLowerCase();
     const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git' ];
+    // example github PR url: github.com/*/*/pull/*/changes
+    // https://github.com/HunterTigerDavis/github-link-clicker-extension/pull/1/changes
 
     if (gitSites.some(site => url.includes(site))) {
         chrome.action.setBadgeText({ text: "!", tabId });
         chrome.action.setBadgeBackgroundColor({ color: "#FF6B35", tabId });
         console.log("Git site detected:", url);
+        // chrome.tabs.sendMessage to script.js 
     } else {
         // Clear badge on non-git sites
         chrome.action.setBadgeText({ text: "", tabId });
