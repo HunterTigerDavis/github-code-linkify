@@ -5,7 +5,6 @@
 const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
-// TODO: different view models for PRs, blob file, and commit
 function isCodeAwarePage() {
   const keywords = ['/pull/', '/commit/', '/blob/'];
   return keywords.some(keyword => window.location.href.includes(keyword));
@@ -17,12 +16,36 @@ function getFullLineUnderMouse(event) {
   const element = document.elementFromPoint(event.clientX, event.clientY);
   if (!element) return null;
 
-  // 2. Walk up to find the closest code container line used in GitHub code views
+  // 2a. Check if we're hovering over a textarea (code blob pages)
+  const textareaElement = element.closest('textarea');
+  if (textareaElement) {
+    // Extract the line of text at the cursor position within the textarea
+    const textContent = textareaElement.value;
+    if (!textContent) return null;
+
+    const lines = textContent.split('\n');
+
+    // Calculate which line is under the cursor using scroll and element positioning
+    const rect = textareaElement.getBoundingClientRect();
+    const relativeY = event.clientY - rect.top;
+    const lineHeight = parseInt(window.getComputedStyle(textareaElement).lineHeight);
+    const scrollTop = textareaElement.scrollTop;
+
+    const lineNumber = Math.floor((relativeY + scrollTop) / lineHeight);
+    const line = lines[lineNumber] || '';
+
+    return {
+      element: textareaElement,
+      text: line
+    };
+  }
+
+  // 2b. Walk up to find the closest code container line used in GitHub diff pages
   // This targets JSON arrays, split diff layouts, and unified diff rows safely.
   const codeLineContainer = element.closest([
-    'td', 
-    'span', 
-    '.blob-code-inner', 
+    'td',
+    'span',
+    '.blob-code-inner',
     '.react-file-line-composition',
     '[data-targets="react-diff-viewer.lines"]'
   ].join(','));
@@ -41,7 +64,7 @@ document.addEventListener('mousemove', (event) => {
   if (!isCodeAwarePage()) return;
 
   const targetLine = getFullLineUnderMouse(event);
-  
+
   // TODO: better edge detection of URLs, starting with http:// or www., ending with quote or *, brackets, etc.
   // removing * & /* from path when navigating to go to base URL, not highlighting entire commented line or tag with <a href="url">, etc.
   if (targetLine && urlRegex.test(targetLine.text)) {
