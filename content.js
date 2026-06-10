@@ -1,12 +1,12 @@
 // V3: enhanced hover
 // TODO: performance testing, expand to more  sites, save hovered/clicked URLs for popup window history
 
-// Robust regex looking for https:// or www.
-const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
+// Robust regex looking for https:// or www., excluding whitespace, quotes, backticks, angle brackets, and asterisks
+const urlRegex = /(https?:\/\/[^\s"'`<>*]+|www\.[^\s"'`<>*]+)/g;
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
-  const keywords = ['/pull/', '/commit/', '/blob/'];
+  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/'];
   return keywords.some(keyword => window.location.href.includes(keyword));
 }
 
