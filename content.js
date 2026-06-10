@@ -5,8 +5,10 @@
 const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
-function isPullRequestPage() {
-  return window.location.href.includes('/pull/');
+// TODO: different view models for PRs, blob file, and commit
+function isCodeAwarePage() {
+  const keywords = ['/pull/', '/commit/', '/blob/'];
+  return keywords.some(keyword => window.location.href.includes(keyword));
 }
 
 // Global function to extract the full line of text beneath the mouse
@@ -36,7 +38,7 @@ function getFullLineUnderMouse(event) {
 
 // 1. Global Mouse Tracking: Detect URLs anywhere on the page
 document.addEventListener('mousemove', (event) => {
-  if (!isPullRequestPage()) return;
+  if (!isCodeAwarePage()) return;
 
   const targetLine = getFullLineUnderMouse(event);
   
@@ -64,7 +66,7 @@ document.addEventListener('mouseout', (event) => {
 
 // 3. Global Click Capture
 document.addEventListener('click', (event) => {
-  if (!isPullRequestPage()) return;
+  if (!isCodeAwarePage()) return;
 
   const targetLine = getFullLineUnderMouse(event);
   if (!targetLine) return;
