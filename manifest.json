@@ -17,7 +17,6 @@
         // "storage",
         "notifications"
         // TODO: additional permissions for scanning PR page to compile links
-
     ],
     "background": {
         "service_worker": "background.js",
@@ -25,20 +24,17 @@
     },
     "content_scripts": [
         {
-            "matches": [ "https://github.com/*" ],
+            "matches": [ "https://*/github.com/*" ],
             "js": ["content.js"],
             "run_at": "document_end"
         }
     ],
     "host_permissions": [
         // specified git sites:
-        "http://github.com/*",
-        "https://github.com/*",
-        "http://gitlab.com/*",
-        "https://gitlab.com/*",
-        "http://bitbucket.org/*",
-        "https://bitbucket.org/*",
-        // allows permissions on ALL sites:
+        "https://*.github.com/*",
+        "https://*.gitlab.com/*",
+        "https://*.bitbucket.org/*",
+        // allows permissions on ALL sites (reduce required permissions for deployment, kept for testing):
         "http://*/*/",
         "https://*/*/"
     ],
