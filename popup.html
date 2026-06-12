@@ -86,12 +86,32 @@
 </head>
 
 <body>
-    <div class="header" width="100%" style="display: flex; align-items: center; gap: 10px;">
-        <img src="icons/icon64.png" alt="Extension Icon" width="64" height="64">
-        <h1>Github Code Linkify</h1>
-        <div class="badge-container" style="margin-top: 10px;">
-            <img src="icons/version-badge.svg" alt="Extension Version" class="badge-img" />
+    <!-- Outer header container pushing column 1 (left) and column 2 (right) apart -->
+    <div class="header"
+        style="width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 15px; margin-bottom: 15px;">
+        <!-- COLUMN 1 (Left Side): Just the icon alone -->
+        <div style="display: flex; align-items: center; justify-content: center; min-width: 64px;">
+            <img src="icons/icon64.png" alt="Extension Icon" width="48" height="48"
+                style="display: block; object-fit: contain;">
         </div>
+
+        <!-- COLUMN 2 (Right Side): Title and Badge stacked vertically -->
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #24292f; line-height: 1.2;">Github Code
+                Linkify</h1>
+
+            <!-- Clickable Badge wrapper under the title -->
+            <div class="badge-container" style="display: block; line-height: 0;">
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+                    style="display: block; border: none; outline: none;">
+                    <img src="icons/version-badge.svg" alt="Extension Version" class="badge-img"
+                        style="display: block; max-width: 100%; height: auto;" />
+                </a>
+            </div>
+        </div>
+
+
+
     </div>
 
     <div class="subheader">
