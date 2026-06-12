@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Github Code Linkify</title>
-    <!-- Style for bulleted list indents -->
+    <!-- Styling for bulleted list -->
     <style>
         body {
             width: 350px;
@@ -89,17 +89,20 @@
     <div class="header" width="100%" style="display: flex; align-items: center; gap: 10px;">
         <img src="icons/icon64.png" alt="Extension Icon" width="64" height="64">
         <h1>Github Code Linkify</h1>
-        <p>Version: <span id="app-version"></span></p>
+        <div class="badge-container" style="margin-top: 10px;">
+            <img src="icons/version-badge.svg" alt="Extension Version" class="badge-img" />
+        </div>
     </div>
+
     <div class="subheader">
         <p>This extension scans the current page for links and displays them in a popup. Click on any link to open it in
             a new tab!</p>
         <button id="myButton">Test alert</button>
         <button id="scanButton">Scan Links</button>
     </div>
-    <div class="URLs">
+    <div class="URLs" style="margin-top: 10px;">
         <h2>
-            <span>Saved PR Links</span>
+            <span>Saved/Clicked Links</span>
             <button id="clear-btn">Clear All</button>
         </h2>
         <!-- Changed container from a <ul> to a flexible display <div> -->

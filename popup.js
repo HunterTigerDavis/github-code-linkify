@@ -2,9 +2,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const listContainer = document.getElementById('list-container');
   const clearBtn = document.getElementById('clear-btn');
-  // Fetch version instantly from the local manifest file on load
-  const manifest = chrome.runtime.getManifest();
-  document.getElementById('app-version').textContent = manifest.version;
 
   function loadAndGroupLinks() {
     chrome.storage.local.get({ clickedUrls: [] }, (result) => {
