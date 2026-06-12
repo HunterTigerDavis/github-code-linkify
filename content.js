@@ -176,7 +176,6 @@ function saveUrlToStorage(url) {
   } catch (error) {
     console.error("Extension pipeline disconnected:", error);
   }
-
 }
 
 console.log("Debug: Content script initialized");
