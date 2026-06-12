@@ -1,8 +1,20 @@
-// V3: enhanced hover
-// TODO: performance testing, expand to more  sites, save hovered/clicked URLs for popup window history
+// V0.4 Clean regex targeting standard https:// links or raw www. text blocks
+const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
 
-// Robust regex looking for https:// or www., excluding whitespace, quotes, backticks, angle brackets, and asterisks
-const urlRegex = /(https?:\/\/[^\s"'`<>*]+|www\.[^\s"'`<>*]+)/g;
+// Create a unique global Highlight object for our extension [1, 3]
+const urlHighlight = new Highlight();
+CSS.highlights.set("ext-url-highlight", urlHighlight);[1, 3]
+
+// Inject a tiny stylesheet dynamically to color only our highlighted ranges
+const style = document.createElement('style');
+style.textContent = `
+  ::highlight(ext-url-highlight) {
+    color: #ff6b00 !important;
+    text-decoration: underline !important;
+    font-weight: bold !important;
+  }
+`;
+document.head.appendChild(style);
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
@@ -10,124 +22,129 @@ function isCodeAwarePage() {
   return keywords.some(keyword => window.location.href.includes(keyword));
 }
 
-// Global function to extract the full line of text beneath the mouse
-function getFullLineUnderMouse(event) {
-  // 1. Grab the element directly under the user's cursor
-  const element = document.elementFromPoint(event.clientX, event.clientY);
-  if (!element) return null;
-
-  // 2a. Check if we're hovering over a textarea (code blob pages)
-  const textareaElement = element.closest('textarea');
-  if (textareaElement) {
-    // Extract the line of text at the cursor position within the textarea
-    const textContent = textareaElement.value;
-    if (!textContent) return null;
-
-    const lines = textContent.split('\n');
-
-    // Calculate which line is under the cursor using scroll and element positioning
-    const rect = textareaElement.getBoundingClientRect();
-    const relativeY = event.clientY - rect.top;
-    const lineHeight = parseInt(window.getComputedStyle(textareaElement).lineHeight);
-    const scrollTop = textareaElement.scrollTop;
-
-    const lineNumber = Math.floor((relativeY + scrollTop) / lineHeight);
-    const line = lines[lineNumber] || '';
-
-    return {
-      element: textareaElement,
-      text: line
-    };
+// Global function to find the exact text node and character index under the cursor
+function getCharIndexUnderMouse(event) {
+  // Use modern caretPositionFromPoint or caretRangeFromPoint to pinpoint the text node [4]
+  let range;
+  if (document.caretRangeFromPoint) {
+    range = document.caretRangeFromPoint(event.clientX, event.clientY);[4]
+  } else if (document.caretPositionFromPoint) {
+    const position = document.caretPositionFromPoint(event.clientX, event.clientY);
+    if (position) {
+      range = document.createRange();
+      range.setStart(position.offsetNode, position.offset);
+      range.setEnd(position.offsetNode, position.offset);
+    }
   }
 
-  // 2b. Walk up to find the closest code container line used in GitHub diff pages
-  // This targets JSON arrays, split diff layouts, and unified diff rows safely.
-  const codeLineContainer = element.closest([
-    'td',
-    'span',
-    '.blob-code-inner',
-    '.react-file-line-composition',
-    '[data-targets="react-diff-viewer.lines"]'
-  ].join(','));
+  if (!range || range.startContainer.nodeType !== Node.TEXT_NODE) return null;
 
-  if (!codeLineContainer) return null;
+  // FIX: Access parentElement because text nodes do not support .closest()
+  const parentElement = range.startContainer.parentElement;
+  if (!parentElement) return null;
 
-  // 3. Return both the row container element and its flat, unbroken text content
+  const container = parentElement.closest('td, span, .blob-code-inner, .react-file-line-composition');
+  if (!container) return null;
+
   return {
-    element: codeLineContainer,
-    text: codeLineContainer.textContent || ""
+    textNode: range.startContainer,
+    offset: range.startOffset,
+    container: container
   };
 }
 
-// Helper function to apply highlight styles
-function applyHighlight(element) {
-  element.style.setProperty('cursor', 'pointer', 'important');
-  element.style.setProperty('color', '#ff6b00', 'important');
-  element.style.setProperty('text-decoration', 'underline', 'important');
-  element.style.setProperty('text-decoration-color', '#ff6b00', 'important');
-}
-
-// Helper function to remove highlight styles
-function removeHighlight(element) {
-  element.style.removeProperty('cursor');
-  element.style.removeProperty('color');
-  element.style.removeProperty('text-decoration');
-  element.style.removeProperty('text-decoration-color');
-}
-
-// 1. Global Mouse Tracking: Detect URLs anywhere on the page
+// 1. Global Mouse Tracking: Highlight ONLY the URL text range under the cursor
 document.addEventListener('mousemove', (event) => {
-  if (!isCodeAwarePage()) return;
+  if (!isCodeAwarePage()) {
+    urlHighlight.clear();[2]
+    return;
+  }
 
-  const targetLine = getFullLineUnderMouse(event);
+  const pointInfo = getCharIndexUnderMouse(event);
+  if (!pointInfo) {
+    urlHighlight.clear();[2]
+    return;
+  }
 
-  // TODO: better edge detection of URLs, starting with http:// or www., ending with quote or *, brackets, etc.
-  // removing * & /* from path when navigating to go to base URL, not highlighting entire commented line or tag with <a href="url">, etc.
-  if (targetLine && urlRegex.test(targetLine.text)) {
-    applyHighlight(targetLine.element);
+  const textNode = pointInfo.textNode;
+  const nodeText = textNode.nodeValue || "";
+
+  urlRegex.lastIndex = 0;
+  let match;
+  let foundMatch = false;
+
+  // Scan all URLs in this immediate text fragment to see if the mouse is directly over one
+  while ((match = urlRegex.exec(nodeText)) !== null) {
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    // Is the user's cursor character index mathematically inside the URL string boundary?
+    if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
+      urlHighlight.clear();[2] // Reset previous highlights
+
+      // Create a virtual text selection range exactly over the URL [2]
+      const highlightRange = document.createRange();
+      highlightRange.setStart(textNode, matchStart);
+      highlightRange.setEnd(textNode, matchEnd);
+
+      // Add the range to our orange CSS highlight register [1, 2]
+      urlHighlight.add(highlightRange);[2]
+      pointInfo.container.style.setProperty('cursor', 'pointer', 'important');
+      foundMatch = true;
+      break;
+    }
+  }
+
+  // Clear highlight if mouse moves away from the URL string
+  if (!foundMatch) {
+    urlHighlight.clear();[2]
+    pointInfo.container.style.removeProperty('cursor');
   }
 });
 
-// 2. Reset mechanism when moving away from elements
-document.addEventListener('mouseout', (event) => {
-  const codeLineContainer = event.target.closest('td, span, .blob-code-inner, .react-file-line-composition');
-  if (codeLineContainer) {
-    removeHighlight(codeLineContainer);
-  }
-});
-
-// 3. Global Click Capture
+// 2. Global Click Capture
 document.addEventListener('click', (event) => {
   if (!isCodeAwarePage()) return;
 
-  const targetLine = getFullLineUnderMouse(event);
-  if (!targetLine) return;
+  const pointInfo = getCharIndexUnderMouse(event);
+  if (!pointInfo) return;
 
-  // If they clicked an actual real HTML link GitHub generated, let it follow native behavior
   if (event.target.closest('a')) return;
 
-  urlRegex.lastIndex = 0; // Reset state
-  const matches = targetLine.text.match(urlRegex);
+  const textNode = pointInfo.textNode;
+  const nodeText = textNode.nodeValue || "";
 
-  if (matches && matches.length > 0) {
-    let destination = matches[0]; // Isolate the first matched URL string
+  urlRegex.lastIndex = 0;
+  let match;
 
-    // Clean up trailing characters commonly found in code syntax (like quotes or commas)
-    destination = destination.replace(/["',;}\)]+$/, '');
+  while ((match = urlRegex.exec(nodeText)) !== null) {
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
 
-    // Format protocol if it's a naked www string
-    if (destination.startsWith('www.')) {
-      destination = `https://${destination}`;
+    if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
+      let destination = match[0];
+      destination = destination.replace(/["',;}\)]+$/, '');
+
+      if (destination.startsWith('www.')) {
+        destination = `https://${destination}`;
+      }
+
+      saveUrlToStorage(destination);
+      window.open(destination, '_blank', 'noopener,noreferrer');
+
+      event.preventDefault();
+      event.stopPropagation();
+      break;
     }
-
-    // Open target website securely in a new panel
-    window.open(destination, '_blank', 'noopener,noreferrer');
-
-    // Kill GitHub's click router to prevent code collapse actions
-    event.preventDefault();
-    event.stopPropagation();
   }
-}, true); // The 'true' flag captures the click event before GitHub sweeps it away
+}, true);
 
-
+// Fixed Helper Function: Uses message passing to bypass content script environment limits
+function saveUrlToStorage(url) {
+  try {
+    chrome.runtime.sendMessage({ action: "saveUrl", url: url });
+  } catch (error) {
+    console.log("Extension context temporarily disconnected. Link will still open.");
+  }
+}
 

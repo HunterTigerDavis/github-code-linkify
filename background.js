@@ -32,3 +32,25 @@ chrome.action.onClicked.addListener(async (tab) => {
     // Send message to popup or perform scan
     console.log("Extension icon clicked on:", tab.url || '');
 });
+
+// Listen for messages from content.js to safely save URLs to storage
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "saveUrl") {
+    const url = message.url;
+
+    chrome.storage.local.get({ clickedUrls: [] }, (result) => {
+      let currentList = result.clickedUrls;
+      
+      // Filter out duplicates to push the newest click to the top
+      currentList = currentList.filter(item => item.url !== url);
+      
+      currentList.unshift({
+        url: url,
+        timestamp: new Date().toLocaleString()
+      });
+
+      chrome.storage.local.set({ clickedUrls: currentList });
+    });
+  }
+});
+
