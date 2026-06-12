@@ -36,6 +36,3 @@ try {
     console.error('❌ Failed to generate badge:', error);
     process.exit(1);
 }
-// https://github.com/HunterTigerDavis/github-code-linkify/blob/main/package.json
-// https://githubusercontent.com
-// https://raw.githubusercontent.com/HunterTigerDavis/github-code-linkify/blob/main/package.json

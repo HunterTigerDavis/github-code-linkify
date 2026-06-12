@@ -19,34 +19,34 @@ document.head.appendChild(style);
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
-  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/' ];
+  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/'];
   const isCodeAware = keywords.some(keyword => window.location.href.includes(keyword));
   console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware);
   return isCodeAware;
 }
 
-  // Scan text nodes under `root` and add highlights for all URL matches
-  function highlightUrlsInTextNodes(root = document.body) {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-    const added = [];
-    let node;
-    while ((node = walker.nextNode())) {
-      const text = node.nodeValue || '';
-      const positions = findUrlPositions(text);
-      positions.forEach(pos => {
-        try {
-          const range = document.createRange();
-          range.setStart(node, pos.start);
-          range.setEnd(node, pos.end);
-          urlHighlight.add(range);
-          added.push({ node, pos });
-        } catch (e) {
-          // ignore nodes that cannot be ranged
-        }
-      });
-    }
-    return added;
+// Scan text nodes under `root` and add highlights for all URL matches
+function highlightUrlsInTextNodes(root = document.body) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  const added = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    const text = node.nodeValue || '';
+    const positions = findUrlPositions(text);
+    positions.forEach(pos => {
+      try {
+        const range = document.createRange();
+        range.setStart(node, pos.start);
+        range.setEnd(node, pos.end);
+        urlHighlight.add(range);
+        added.push({ node, pos });
+      } catch (e) {
+        // ignore nodes that cannot be ranged
+      }
+    });
   }
+  return added;
+}
 
 // Global function to find the exact text node and character index under the cursor
 function getCharIndexUnderMouse(event) {
@@ -174,8 +174,9 @@ function saveUrlToStorage(url) {
   try {
     chrome.runtime.sendMessage({ action: "saveUrl", url: url });
   } catch (error) {
-    console.log("Extension context temporarily disconnected. Link will still open.");
+    console.error("Extension pipeline disconnected:", error);
   }
+
 }
 
 console.log("Debug: Content script initialized");
