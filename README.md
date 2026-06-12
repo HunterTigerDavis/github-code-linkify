@@ -37,9 +37,7 @@ The extension splits its logic between independent architecture layers to bypass
 - **`background.js`** — Listens for script transmissions to safely commit URLs to the background `chrome.storage.local` database and commands the active tab's layout badge layout.
 - **`popup.html` & `script.js`** — Reads the saved historical array on-click, extracts the URL hostnames, strips out standard `www.` subdomains, and draws them as clear bulleted lists organized alphabetically by site.
 
-Visible URLs inside code views or comments without hyperlink identifiers such as 
-`https://github.com/HunterTigerDavis/github-code-linkify`
-Will be 
+Visible URLs inside code views or comments without hyperlink identifiers such as `https://github.com/HunterTigerDavis/github-code-linkify` can be clicked on like normal hyperlinks and saved in the popup history.
 
 ## 🛠️ Development & Contributing
 
