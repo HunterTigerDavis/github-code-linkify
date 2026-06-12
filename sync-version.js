@@ -2,11 +2,11 @@ import fs from 'fs';
 import { makeBadge } from 'badge-maker';
 
 // Sync version and description from package.json to manifest.json, and generate a local SVG badge for the extension version
-try {
-    // 1. Read the single source of truth from package.json
-    const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-    console.log(`⏳ Syncing configuration files for v${pkg.version}...`);
 
+// 1. Read the single source of truth from package.json
+const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+console.log(`⏳ Syncing configuration files for v${pkg.version}...`);
+try {
     // 2. Directly mirror version and description to manifest.json
     if (fs.existsSync('./manifest.json')) {
         const manifest = JSON.parse(fs.readFileSync('./manifest.json', 'utf8'));

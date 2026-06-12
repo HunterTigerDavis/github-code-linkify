@@ -6,10 +6,10 @@
   "main": "background.js",
   "type": "module",
   "scripts": {
-    "sync": "node sync-version.js && git add manifest.json version-badge.svg",
-    "patch": "pnpm version patch && pnpm run sync",
-    "minor": "pnpm version minor && pnpm run sync",
-    "major": "pnpm version major && pnpm run sync"
+    "sync": "node sync-version.js && git add manifest.json icons/version-badge.svg",
+    "patch": "pnpm version patch --no-git-tag-version && pnpm run sync",
+    "minor": "pnpm version minor --no-git-tag-version && pnpm run sync",
+    "major": "pnpm version major --no-git-tag-version && pnpm run sync"
   },
   "keywords": [
     "browser-extension",
