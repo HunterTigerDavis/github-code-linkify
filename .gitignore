@@ -5,3 +5,4 @@ node_modules/*
 .pnpm-store/
 oldContent.js
 *plan.md
+*.continue*

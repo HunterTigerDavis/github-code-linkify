@@ -21,6 +21,7 @@ async function scanPageForLinks() {
         }
     });
 }
+
 document.getElementById("scanButton").addEventListener("click", scanPageForLinks);
 
 // TODO: message passing
@@ -29,8 +30,8 @@ function handleMessage(request, sender, sendResponse) {
     if (request.type === 'links') {
         // test
         const links = request.data;
-        const linksList = document.getElementById("linksList");
-        linksList.innerHTML = ""; // Clear previous links
+        const urlList = document.getElementById("urlList");
+        urlList.innerHTML = ""; // Clear previous links
         links.forEach(link => {
             const listItem = document.createElement("li");
             const anchor = document.createElement("a");
@@ -38,7 +39,7 @@ function handleMessage(request, sender, sendResponse) {
             anchor.target = "_blank";
             anchor.textContent = link;
             listItem.appendChild(anchor);
-            linksList.appendChild(listItem);
+            urlList.appendChild(listItem);
         });
     }
 }
