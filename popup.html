@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Link Clicker for Pull Requests</title>
+    <title>Github Code Linkify</title>
     <!-- Style for bulleted list indents -->
     <style>
         body {
@@ -88,7 +88,8 @@
 <body>
     <div class="header" width="100%" style="display: flex; align-items: center; gap: 10px;">
         <img src="icons/icon64.png" alt="Extension Icon" width="64" height="64">
-        <h1>GitHub Link Clicker Extension</h1>
+        <h1>Github Code Linkify</h1>
+        <p>Version: <span id="app-version"></span></p>
     </div>
     <div class="subheader">
         <p>This extension scans the current page for links and displays them in a popup. Click on any link to open it in
@@ -107,7 +108,7 @@
         <ul id="urlList">
             <li>Insert list of URLs here</li>
         </ul>
-        
+
     </div>
     </div>
     <script src="popup.js"></script>

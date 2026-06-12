@@ -1,44 +1,49 @@
-# GitHub Link Clicker Extension
+# GitHub Code Linkify
 
-A Chrome extension that enhances GitHub browsing by providing URL highlighting and click functionality on code lines in pull requests, commits, and code blobs.
+[![GitHub version](https://shields.io)](https://github.com/HunterTigerDavis/github-code-linkify)
 
-## Features
+A lightweight, high-performance Chrome extension that enhances GitHub browsing by providing instant plaintext URL highlighting and click functionality directly on code lines in pull requests, commits, and code blobs.
 
-- **URL Highlighting**: Automatically highlights URLs in code lines when hovering over them
-- **Click-to-Open**: Click on highlighted URLs to open them in a new tab
-- **Cross-View Support**: Works across different GitHub views (PRs, commits, code blobs)
-- **Smart Detection**: Only activates on relevant GitHub pages
+## 🚀 Features
 
-## Installation
+- **Isolated URL Highlighting:** Automatically highlights plaintext URLs or commented references inside code lines when hovering over them. Uses the modern CSS Custom Highlight API to style *only* the specific URL text sequence without altering your code's native syntax highlighting or breaking copy-paste layout formatting.
+- **Click-to-Open (Virtual DOM Safe):** Click on highlighted URLs to instantly open them in a new tab. Completely bypasses destructive structural `.innerHTML` updates, preventing GitHub's dynamic React/Turbo engine from throwing rendering crashes or overwriting elements during page scrolls.
+- **Persistent Aggregate History:** Automatically captures and logs clicked references in a secure local browser database, allowing you to view your links cleanly grouped by base site domain inside the extension popup window.
+- **Smart Dual-Badge Feedback:** Monitors active tab context to render a high-visibility alert (`!`) when browsing an active, relevant GitHub page, and seamlessly transitions to a numeric uBlock-style counter showing reference frequency when visiting your redirected destinations.
+- **Cross-View Support:** Activates seamlessly across multiple complex GitHub layout structures without breaking internal page routing.
 
-1. Clone this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode"
-4. Click "Load unpacked" and select the extension directory
+## 📁 Supported GitHub Views
 
-## How It Works
+✅ The extension selectively targets and activates on the following GitHub environments:
+- **Pull Request pages** (`/pull/`)
+- **Commit pages** (`/commit/`)
 
-The extension injects a content script that:
-- Detects when you're on GitHub pull request, commit, or code blob pages
-- Listens for mouse movements to identify code lines containing URLs
-- Applies visual highlighting to make URLs clickable
-- Handles clicks to open URLs in new tabs without interfering with GitHub's normal behavior
+⚠️ Current Work in Progress:
+- **Code blob views** (`/blob/`)
+- **Files changed / Files modified views** (`/changes/`)
 
-## Supported GitHub Views
+## 🛠️ Installation
 
-- Pull Request pages (`/pull/`)
-- Commit pages (`/commit/`)
-- Code blob pages (`/blob/`)
-- Changes view (`/changes/`)
+1. Clone or download this repository to your local machine.
+2. Open Google Chrome and navigate to `chrome://extensions/`.
+3. Enable **Developer mode** by toggling the switch in the top-right corner.
+4. Click the **Load unpacked** button in the top-left corner.
+5. Select the root project extension directory containing your `manifest.json`.
 
-## Development
+## ⚙️ How It Works
 
-To contribute or modify the extension:
+The extension splits its logic between independent architecture layers to bypass GitHub's virtual layout constraints:
+- **`content.js`** — Tacks a lightweight `document.elementFromPoint` listener onto your cursor coordinates to flatten fragmented code nodes into single cohesive string lines on-demand. If it mathematically intersects a URL, it flags the browser's separate visual layer.
+- **`background.js`** — Listens for script transmissions to safely commit URLs to the background `chrome.storage.local` database and commands the active tab's layout badge layout.
+- **`popup.html` & `script.js`** — Reads the saved historical array on-click, extracts the URL hostnames, strips out standard `www.` subdomains, and draws them as clear bulleted lists organized alphabetically by site.
 
-1. Make changes to `content.js`
-2. Reload the extension in Chrome
-3. Test the functionality on GitHub
+## 🛠️ Development & Contributing
 
-## License
+To contribute or modify the extension framework locally:
+1. Make structural tracking changes inside `content.js` or data-handling updates inside `background.js`.
+2. Reload the extension inside your `chrome://extensions/` control window.
+3. Open Developer Tools (`F12`) on a target GitHub diff workspace to monitor execution.
 
-MIT
+## 📄 License
+
+This project is open-source and distributed under the [MIT License](./LICENSE).
