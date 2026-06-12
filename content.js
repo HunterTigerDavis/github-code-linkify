@@ -19,7 +19,7 @@ document.head.appendChild(style);
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
-  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/'];
+  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/' ];
   const isCodeAware = keywords.some(keyword => window.location.href.includes(keyword));
   console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware);
   return isCodeAware;

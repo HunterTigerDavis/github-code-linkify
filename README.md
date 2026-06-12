@@ -12,6 +12,10 @@ A lightweight, high-performance Chrome extension that enhances GitHub browsing b
 - **Smart Dual-Badge Feedback:** Monitors active tab context to render a high-visibility alert (`!`) when browsing an active, relevant GitHub page, and seamlessly transitions to a numeric uBlock-style counter showing reference frequency when visiting your redirected destinations.
 - **Cross-View Support:** Activates seamlessly across multiple complex GitHub layout structures without breaking internal page routing.
 
+## Example
+
+Visible URLs inside code views or comments without hyperlink identifiers such as `https://github.com/HunterTigerDavis/github-code-linkify` can be clicked on like normal hyperlinks and saved in the popup history.
+
 ## 📁 Supported GitHub Views
 
 ✅ The extension selectively targets and activates on the following GitHub environments:
@@ -21,6 +25,7 @@ A lightweight, high-performance Chrome extension that enhances GitHub browsing b
 ⚠️ Current Work in Progress:
 - **Code blob views** (`/blob/`)
 - **Files changed / Files modified views** (`/changes/`)
+- **PR creation views** (`/compare/`)
 
 ## 🛠️ Installation
 
@@ -36,8 +41,6 @@ The extension splits its logic between independent architecture layers to bypass
 - **`content.js`** — Tacks a lightweight `document.elementFromPoint` listener onto your cursor coordinates to flatten fragmented code nodes into single cohesive string lines on-demand. If it mathematically intersects a URL, it flags the browser's separate visual layer.
 - **`background.js`** — Listens for script transmissions to safely commit URLs to the background `chrome.storage.local` database and commands the active tab's layout badge layout.
 - **`popup.html` & `script.js`** — Reads the saved historical array on-click, extracts the URL hostnames, strips out standard `www.` subdomains, and draws them as clear bulleted lists organized alphabetically by site.
-
-Visible URLs inside code views or comments without hyperlink identifiers such as `https://github.com/HunterTigerDavis/github-code-linkify` can be clicked on like normal hyperlinks and saved in the popup history.
 
 ## 🛠️ Development & Contributing
 
