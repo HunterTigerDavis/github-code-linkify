@@ -7,3 +7,5 @@ oldContent.js
 *plan.md
 *plan.txt
 *.continue*
+.vscode/
+test/*

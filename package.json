@@ -1,14 +1,34 @@
 {
-  "name": "github-link-clicker-extension",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "github-code-linkify",
+  "version": "0.5.0",
+  "description": "A Chrome extension that enhances GitHub browsing by providing URL highlighting and click functionality directly on code lines in pull requests, commits, and code blobs views.",
+  "author": "Hunter Tiger Davis",
+  "main": "background.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "sync": "node sync-version.js && git add manifest.json package.json icons/version-badge.svg",
+    "patch": "pnpm version patch --no-git-tag-version && pnpm run sync",
+    "minor": "pnpm version minor --no-git-tag-version && pnpm run sync",
+    "major": "pnpm version major --no-git-tag-version && pnpm run sync"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "browser-extension",
+    "chrome-extension",
+    "github",
+    "linkify",
+    "code-links",
+    "pull-requests",
+    "commits",
+    "code-blobs",
+    "url-highlighting",
+    "clickable-links",
+    "developer-tools",
+    "productivity",
+    "open-source",
+    "javascript",
+    "web-extension"
+  ],
+  "license": "MIT",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -16,8 +36,8 @@
       "onFail": "download"
     }
   },
-  "type": "module",
   "devDependencies": {
-    "@types/chrome": "^0.1.42"
+    "@types/chrome": "^0.1.42",
+    "badge-maker": "^5.0.2"
   }
 }

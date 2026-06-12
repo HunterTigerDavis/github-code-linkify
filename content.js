@@ -1,4 +1,5 @@
 // V0.4: Clean regex targeting standard https:// links or raw www. text blocks
+console.log("Debug: Content script loaded");
 const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
 
 // Create a unique global Highlight object for our extension [1, 3]
@@ -18,8 +19,33 @@ document.head.appendChild(style);
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
-  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/'];
-  return keywords.some(keyword => window.location.href.includes(keyword));
+  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/'];
+  const isCodeAware = keywords.some(keyword => window.location.href.includes(keyword));
+  console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware);
+  return isCodeAware;
+}
+
+// Scan text nodes under `root` and add highlights for all URL matches
+function highlightUrlsInTextNodes(root = document.body) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  const added = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    const text = node.nodeValue || '';
+    const positions = findUrlPositions(text);
+    positions.forEach(pos => {
+      try {
+        const range = document.createRange();
+        range.setStart(node, pos.start);
+        range.setEnd(node, pos.end);
+        urlHighlight.add(range);
+        added.push({ node, pos });
+      } catch (e) {
+        // ignore nodes that cannot be ranged
+      }
+    });
+  }
+  return added;
 }
 
 // Global function to find the exact text node and character index under the cursor
@@ -80,6 +106,7 @@ document.addEventListener('mousemove', (event) => {
 
     // Is the user's cursor character index mathematically inside the URL string boundary?
     if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
+      console.log('Found URL match:', match[0], 'at', matchStart, matchEnd, 'in container:', pointInfo.container);
       urlHighlight.clear();[2] // Reset previous highlights
 
       // Create a virtual text selection range exactly over the URL [2]
@@ -97,6 +124,7 @@ document.addEventListener('mousemove', (event) => {
 
   // Clear highlight if mouse moves away from the URL string
   if (!foundMatch) {
+    console.log('No URL under cursor — clearing highlight');
     urlHighlight.clear();[2]
     pointInfo.container.style.removeProperty('cursor');
   }
@@ -104,6 +132,7 @@ document.addEventListener('mousemove', (event) => {
 
 // 2. Global Click Capture
 document.addEventListener('click', (event) => {
+  console.log('Click event detected');
   if (!isCodeAwarePage()) return;
 
   const pointInfo = getCharIndexUnderMouse(event);
@@ -122,6 +151,7 @@ document.addEventListener('click', (event) => {
     const matchEnd = matchStart + match[0].length;
 
     if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
+      console.log('Click - URL matches:', match[0]);
       let destination = match[0];
       destination = destination.replace(/["',;}\)]+$/, '');
 
@@ -144,7 +174,9 @@ function saveUrlToStorage(url) {
   try {
     chrome.runtime.sendMessage({ action: "saveUrl", url: url });
   } catch (error) {
-    console.log("Extension context temporarily disconnected. Link will still open.");
+    console.error("Extension pipeline disconnected:", error);
   }
 }
+
+console.log("Debug: Content script initialized");
 
