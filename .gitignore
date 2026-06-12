@@ -8,4 +8,4 @@ oldContent.js
 *plan.txt
 *.continue*
 .vscode/
-
+test/*
