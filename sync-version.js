@@ -7,7 +7,7 @@ import { makeBadge } from 'badge-maker';
 const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 console.log(`⏳ Syncing configuration files for v${pkg.version}...`);
 try {
-    // 2. Directly mirror version and description to manifest.json
+    // 2. Directly mirror package version and description to manifest.json
     if (fs.existsSync('./manifest.json')) {
         const manifest = JSON.parse(fs.readFileSync('./manifest.json', 'utf8'));
         manifest.version = pkg.version;
@@ -36,3 +36,6 @@ try {
     console.error('❌ Failed to generate badge:', error);
     process.exit(1);
 }
+// https://github.com/HunterTigerDavis/github-code-linkify/blob/main/package.json
+// https://githubusercontent.com
+// https://raw.githubusercontent.com/HunterTigerDavis/github-code-linkify/blob/main/package.json

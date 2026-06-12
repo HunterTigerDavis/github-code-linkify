@@ -1,6 +1,6 @@
 # GitHub Code Linkify
 
-[![GitHub version](https://shields.io)](https://github.com/HunterTigerDavis/github-code-linkify)
+[![Extension version](./icons/version-badge.svg)](https://github.com/HunterTigerDavis/github-code-linkify)
 
 A lightweight, high-performance Chrome extension that enhances GitHub browsing by providing instant plaintext URL highlighting and click functionality directly on code lines in pull requests, commits, and code blobs.
 
@@ -21,11 +21,11 @@ Visible URLs inside code views or comments without hyperlink identifiers such as
 ✅ The extension selectively targets and activates on the following GitHub environments:
 - **Pull Request pages** (`/pull/`)
 - **Commit pages** (`/commit/`)
+- **PR creation views** (`/compare/`)
 
 ⚠️ Current Work in Progress:
 - **Code blob views** (`/blob/`)
 - **Files changed / Files modified views** (`/changes/`)
-- **PR creation views** (`/compare/`)
 
 ## 🛠️ Installation
 
