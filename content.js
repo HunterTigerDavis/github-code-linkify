@@ -1,4 +1,4 @@
-// V0.4 Clean regex targeting standard https:// links or raw www. text blocks
+// V0.4: Clean regex targeting standard https:// links or raw www. text blocks
 const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
 
 // Create a unique global Highlight object for our extension [1, 3]
