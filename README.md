@@ -22,6 +22,7 @@ Example formats for testing:
 * Single quote URL: 'www.github.com'
 * Single quote with slash/: 'www.github.com/'
 * Double quote URL: "https://github.com/HunterTigerDavis/github-code-linkify"
+* Wildcard pattern: https://*.github.com/*/*/pull/*/*
 
 ## 📁 Supported GitHub Views
 

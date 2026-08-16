@@ -1,15 +1,25 @@
-// V0.6: Match real web hosts, but avoid file names and version labels like plan.md / V0.4
+// V0.6: Match real URLs including browser scheme URLs like chrome://extensions/ while excluding file names and version labels
 console.log("Debug: Content script loaded");
-// Matches: https://example.com, www.example.com, github.com, gitlab.com/example
+// Matches: https://example.com, www.example.com, gitlab.com/example, chrome://extensions/
 // Excludes: V0.4, plan.md, plan.txt
-const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+|(?<![A-Za-z0-9])(?:[a-z0-9-]+\.)+(?:com|org|net|io|dev|app|edu|gov|info|ai|co|uk|us|ca|ly|me|biz|tv|de|fr|nl|jp|au|in|cn|xyz|online|shop|pro)(?:[/?#][^\s"'`<>]*)?)/gi;
+const urlRegex = /([a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+|(?<![A-Za-z0-9])(?:[a-z0-9-]+\.)+(?:com|org|net|io|dev|app|edu|gov|info|ai|co|uk|us|ca|ly|me|biz|tv|de|fr|nl|jp|au|in|cn|xyz|online|shop|pro)(?:[/?#][^\s"'`<>]*)?)/gi;
 
 function normalizeUrlDestination(rawUrl) {
   let destination = rawUrl.trim().replace(/["',;}\)\]]+$/, '');
   if (!destination) return '';
 
-  // Preserve already-absolute URLs exactly as written.
-  if (/^https?:\/\//i.test(destination)) {
+  // Simplified wildcard handling:
+  // - remove leading "*." from domain prefixes like *.github.com
+  // - stop at the first wildcard in the path, so config patterns never open as invalid URLs
+  destination = destination.replace(/^\*\./, '');
+
+  const wildcardIndex = destination.indexOf('*');
+  if (wildcardIndex !== -1) {
+    destination = destination.slice(0, wildcardIndex);
+  }
+
+  // Preserve already-absolute URLs exactly as written, including browser schemes like chrome://
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//i.test(destination)) {
     return destination;
   }
 
