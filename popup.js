@@ -1,19 +1,33 @@
+function getCachedExtensionMeta() {
+  const manifest = chrome.runtime.getManifest();
+
+  return {
+    name: manifest.name ?? 'Extension',
+    description: manifest.description ?? '',
+    repositoryUrl: manifest.homepage_url ?? manifest.repository?.url ?? ''
+  };
+}
+
+function populateExtensionMeta() {
+  const nameEl = document.getElementById('extension-name');
+  const descEl = document.getElementById('extension-description');
+  const repoEl = document.getElementById('extension-repo');
+
+  chrome.storage.local.get(['extensionMeta'], (result) => {
+    const meta = result.extensionMeta ?? getCachedExtensionMeta();
+    const { name, description, repositoryUrl } = meta;
+
+    if (nameEl) nameEl.textContent = name ?? 'Extension';
+    if (descEl) descEl.textContent = description ?? '';
+    if (repoEl && repositoryUrl) {
+      repoEl.href = repositoryUrl;
+    }
+  });
+}
+
 // Fetch the stored (clicked) URLs, group them cleanly by site domain, and output them as a bulleted list
 document.addEventListener('DOMContentLoaded', () => {
-  
-  // Get references to manifest for syncing strings
-  function getManifestInfo() {
-    const manifest = chrome.runtime.getManifest();
-    const nameEl = document.getElementById("extension-name");
-    const descEl = document.getElementById("extension-description");
-    const repoEl = document.getElementById("extension-repo");
-
-    if (nameEl) nameEl.textContent = manifest.name;
-    if (descEl) descEl.textContent = manifest.description;
-    if (repoEl) repoEl.href = manifest.homepage_url;
-  }
-  // load manifest info first
-  getManifestInfo();
+  populateExtensionMeta();
 
   const listContainer = document.getElementById('list-container');
   const clearBtn = document.getElementById('clear-btn');

@@ -1,7 +1,28 @@
-// Auto-trigger popup when extension reloads/installs
+function cacheExtensionMeta() {
+  const manifest = chrome.runtime.getManifest();
+  const meta = {
+    name: manifest.name || 'Extension',
+    description: manifest.description || '',
+    repositoryUrl: manifest.homepage_url || (manifest.repository && manifest.repository.url) || ''
+  };
+
+  chrome.storage.local.set({ extensionMeta: meta }, () => {
+    console.log('Extension metadata cached:', meta);
+  });
+}
+
+// Refresh the cached metadata whenever the background script initializes.
+cacheExtensionMeta();
+
+// Auto-trigger popup when extension reloads/installs.
 chrome.runtime.onInstalled.addListener(() => {
+  cacheExtensionMeta();
   chrome.action.openPopup().catch(() => { });
   console.log("Extension loaded, popup triggered");
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  cacheExtensionMeta();
 });
 
 // Helper function to dynamically manage badges safely with promise error suppression
