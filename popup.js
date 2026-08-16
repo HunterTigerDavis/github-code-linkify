@@ -1,5 +1,20 @@
-// V0.4: Fetch the stored (clicked) URLs, group them cleanly by site domain, and output them as a bulleted list
+// Fetch the stored (clicked) URLs, group them cleanly by site domain, and output them as a bulleted list
 document.addEventListener('DOMContentLoaded', () => {
+  
+  // Get references to manifest for syncing strings
+  function getManifestInfo() {
+    const manifest = chrome.runtime.getManifest();
+    const nameEl = document.getElementById("extension-name");
+    const descEl = document.getElementById("extension-description");
+    const repoEl = document.getElementById("extension-repo");
+
+    if (nameEl) nameEl.textContent = manifest.name;
+    if (descEl) descEl.textContent = manifest.description;
+    if (repoEl) repoEl.href = manifest.homepage_url;
+  }
+  // load manifest info first
+  getManifestInfo();
+
   const listContainer = document.getElementById('list-container');
   const clearBtn = document.getElementById('clear-btn');
 
@@ -133,30 +148,5 @@ function handleMessage(request, sender, sendResponse) {
 }
 chrome.runtime.onMessage.addListener(handleMessage);
 
-
-// test alert function
-async function sayHello() {
-  console.log("Hello from the extension!");
-  let queryOptions = { active: true, lastFocusedWindow: true };
-  let [tab] = await chrome.tabs.query({ active: true });
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: () => {
-      // inject into the actual page context to access DOM and find links, then display in popup:
-      // document.body
-      alert("Hello from the extension!");
-      // notification test instead of alert:
-      // var opt = {
-      //     type: 'basic',
-      //     iconUrl: 'icons/icon64.png',
-      //     title: 'Hello from the extension!',
-      //     contextMessage: 'Test simple notification.'
-      // };
-      //   chrome.notifications.create('notify1', opt, function(id) { console.log("Last error:", chrome.runtime.lastError); });
-
-    }
-  });
-}
-document.getElementById("myButton").addEventListener("click", sayHello);
 
 

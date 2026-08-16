@@ -3,7 +3,7 @@ import { makeBadge } from 'badge-maker';
 
 // Sync version and description from package.json to manifest.json, and generate a local SVG badge for the extension version
 
-// 1. Read the single source of truth from package.json
+// 1. Read the version number from package.json
 const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 console.log(`⏳ Syncing configuration files for v${pkg.version}...`);
 try {
@@ -20,8 +20,8 @@ try {
     process.exit(1);
 }
 
+// 3. Generate the local SVG version badge using badge-maker
 try {
-    // 3. Generate the local SVG version badge using badge-maker
     const format = {
         label: 'version',
         message: `v${pkg.version}`,
@@ -36,3 +36,5 @@ try {
     console.error('❌ Failed to generate badge:', error);
     process.exit(1);
 }
+
+// 4. TODO: sync manifest strings (name, description, homepage_url) to popup.html and popup.js once for consistency/efficiency (avoid sync on every DOM/popup.js load)

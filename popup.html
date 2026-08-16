@@ -97,24 +97,28 @@
 
         <!-- COLUMN 2 (Right Side): Title and Badge stacked vertically -->
         <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
-            <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #24292f; line-height: 1.2;">Github Code
-                Linkify</h1>
+            <h1 id="extension-name" style="margin: 0; font-size: 24px; font-weight: bold; color: #24292f; line-height: 1.2;">
+                <!-- Repo name: Github Code Linkify -->
+            </h1>
 
             <!-- Clickable Badge wrapper under the title -->
             <div class="badge-container" style="display: block; line-height: 0;">
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+                <a id="extension-repo" href="#" target="_blank" rel="noopener noreferrer"
                     style="display: block; border: none; outline: none;">
                     <img src="icons/version-badge.svg" alt="Extension Version" class="badge-img"
                         style="display: block; max-width: 100%; height: auto;" />
                 </a>
+                <p id="repo-text">Repository</p>
+                <a id="extension-tab-view" href="#" target="_blank" rel="noopener noreferrer">Open pop up in new tab</a>
+                <!-- TODO: add option to open in side bar view instead of pop up/new tab -->
             </div>
         </div>
     </div>
 
     <div class="subheader">
-        <p>This extension scans the current page for links and displays them in a popup. Click on any link to open it in
-            a new tab, and view your history in the popup!</p>
-        <button id="myButton">Test alert</button>
+        <p id="extension-description">
+            <!-- Description: This extension scans the current page for links and displays them in a popup. Click on any link to open it in a new tab, and view your history in the popup! -->
+        </p>
         <button id="scanButton">Scan Links</button>
     </div>
     <div class="URLs" style="margin-top: 10px;">
