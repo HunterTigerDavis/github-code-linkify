@@ -19,8 +19,18 @@ document.head.appendChild(style);
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
-  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/'];
-  const isCodeAware = keywords.some(keyword => window.location.href.includes(keyword));
+  const enableBaseUrlCheck = true; // Placeholder for future setting to check base URLs
+  const enableKeywordCheck = true; // Placeholder for future setting to check specific path keywords 
+  const awareBaseUrls = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
+  // awareKeywords for paths within GitHub 
+  const awareKeywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/', '/wiki/', '/issues', '/discussions'];
+  let isCodeAware = false;
+  if (enableBaseUrlCheck) { // check on any page with a base URL match
+    isCodeAware = isCodeAware || awareBaseUrls.some(url => window.location.href.includes(url));
+  } 
+  if (enableKeywordCheck) { // just check on specific pages
+    isCodeAware = isCodeAware || awareKeywords.some(keyword => window.location.href.includes(keyword));
+  }
   console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware);
   return isCodeAware;
 }
