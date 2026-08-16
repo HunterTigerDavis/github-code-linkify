@@ -16,6 +16,14 @@ A lightweight, high-performance Chrome extension that enhances GitHub browsing b
 
 Visible URLs inside code views or comments without hyperlink identifiers such as `https://github.com/HunterTigerDavis/github-code-linkify` can be clicked on like normal hyperlinks and saved in the popup history.
 
+Example formats for testing:
+* Caret-escaped URL using www prefix: `www.github.com/HunterTigerDavis/github-code-linkify`
+* Direct pasted URL: https://github.com/HunterTigerDavis/github-code-linkify
+* Single quote URL: 'www.github.com'
+* Single quote with slash/: 'www.github.com/'
+* Double quote URL: "https://github.com/HunterTigerDavis/github-code-linkify"
+* Wildcard pattern: https://*.github.com/*/*/pull/*/*
+
 ## 📁 Supported GitHub Views
 
 ✅ The extension selectively targets and activates on the following GitHub environments:

@@ -1,6 +1,42 @@
-// V0.4: Clean regex targeting standard https:// links or raw www. text blocks
+// V0.6: Match real URLs including browser scheme URLs like chrome://extensions/ while excluding file names and version labels
 console.log("Debug: Content script loaded");
-const urlRegex = /(https?:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+)/g;
+// Matches: https://example.com, www.example.com, gitlab.com/example, chrome://extensions/
+// Excludes: V0.4, plan.md, plan.txt
+const urlRegex = /([a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+|(?<![A-Za-z0-9])(?:[a-z0-9-]+\.)+(?:com|org|net|io|dev|app|edu|gov|info|ai|co|uk|us|ca|ly|me|biz|tv|de|fr|nl|jp|au|in|cn|xyz|online|shop|pro)(?:[/?#][^\s"'`<>]*)?)/gi;
+
+function normalizeUrlDestination(rawUrl) {
+  let destination = rawUrl.trim().replace(/["',;}\)\]]+$/, '');
+  if (!destination) return '';
+
+  // Simplified wildcard handling:
+  // - remove leading "*." from domain prefixes like *.github.com
+  // - stop at the first wildcard in the path, so config patterns never open as invalid URLs
+  destination = destination.replace(/^\*\./, '');
+
+  const wildcardIndex = destination.indexOf('*');
+  if (wildcardIndex !== -1) {
+    destination = destination.slice(0, wildcardIndex);
+  }
+
+  // Preserve already-absolute URLs exactly as written, including browser schemes like chrome://
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//i.test(destination)) {
+    return destination;
+  }
+
+  // Treat valid host-like values as their own absolute URL instead of a relative path.
+  // This excludes file names like plan.md and plan.txt.
+  if (/^(?:[a-z0-9-]+\.)+(?:com|org|net|io|dev|app|edu|gov|info|ai|co|xyz|us|uk|ca|ly|me|biz|tv|de|fr|nl|jp|au|in|cn|online|shop|pro)(?:[/:?#].*)?$/i.test(destination)) {
+    return `https://${destination}`;
+  }
+
+  // Support common bare www form.
+  if (destination.startsWith('www.')) {
+    return `https://${destination}`;
+  }
+
+  // Keep non-host text as-is so it doesn't accidentally resolve against the current repo URL.
+  return destination;
+}
 
 // Create a unique global Highlight object for our extension [1, 3]
 const urlHighlight = new Highlight();
@@ -19,8 +55,18 @@ document.head.appendChild(style);
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 function isCodeAwarePage() {
-  const keywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/'];
-  const isCodeAware = keywords.some(keyword => window.location.href.includes(keyword));
+  const enableBaseUrlCheck = true; // Placeholder for future setting to check base URLs
+  const enableKeywordCheck = true; // Placeholder for future setting to check specific path keywords 
+  const awareBaseUrls = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
+  // awareKeywords for paths within GitHub 
+  const awareKeywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/', '/wiki/', '/issues', '/discussions'];
+  let isCodeAware = false;
+  if (enableBaseUrlCheck) { // check on any page with a base URL match
+    isCodeAware = isCodeAware || awareBaseUrls.some(url => window.location.href.includes(url));
+  } 
+  if (enableKeywordCheck) { // just check on specific pages
+    isCodeAware = isCodeAware || awareKeywords.some(keyword => window.location.href.includes(keyword));
+  }
   console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware);
   return isCodeAware;
 }
@@ -69,7 +115,8 @@ function getCharIndexUnderMouse(event) {
   const parentElement = range.startContainer.parentElement;
   if (!parentElement) return null;
 
-  const container = parentElement.closest('td, span, .blob-code-inner, .react-file-line-composition');
+  // Extended selectors to support README paragraphs, code blocks, markdown content, and various GitHub layouts
+  const container = parentElement.closest('td, span, p, li, div, .blob-code-inner, .react-file-line-composition, code, pre');
   if (!container) return null;
 
   return {
@@ -152,11 +199,10 @@ document.addEventListener('click', (event) => {
 
     if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
       console.log('Click - URL matches:', match[0]);
-      let destination = match[0];
-      destination = destination.replace(/["',;}\)]+$/, '');
+      const destination = normalizeUrlDestination(match[0]);
 
-      if (destination.startsWith('www.')) {
-        destination = `https://${destination}`;
+      if (!destination) {
+        break;
       }
 
       saveUrlToStorage(destination);
