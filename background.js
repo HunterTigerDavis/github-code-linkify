@@ -16,12 +16,10 @@ function readExtensionMeta() {
   return new Promise((resolve) => {
     chrome.storage.local.get(['extensionMeta'], (result) => {
       const cached = result.extensionMeta;
-
       if (cached && cached.version) {
         resolve(cached);
         return;
       }
-
       resolve(writeExtensionMeta());
     });
   });
@@ -45,7 +43,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 readExtensionMeta();
 
 chrome.runtime.onInstalled.addListener(() => {
+  // Sync the extension metadata to local storage on install
   writeExtensionMeta();
+  // open chrome extension popup on install
   chrome.action.openPopup().catch(() => { });
   console.log("Extension loaded, popup triggered");
 });
