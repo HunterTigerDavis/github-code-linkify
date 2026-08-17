@@ -1,3 +1,19 @@
+const defaultSettings = {
+  autoScanOnOpen: true,
+  darkMode: false,
+  showBadge: true
+};
+
+function getExtensionSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['extensionSettings'], (result) => {
+      const settings = { ...defaultSettings, ...(result.extensionSettings || {}) };
+      chrome.storage.local.set({ extensionSettings: settings });
+      resolve(settings);
+    });
+  });
+}
+
 function writeExtensionMeta() {
   const manifest = chrome.runtime.getManifest();
 
@@ -25,6 +41,7 @@ function readExtensionMeta() {
   });
 }
 
+// background listener for popup & content script requests
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'getExtensionMeta') {
     readExtensionMeta().then((meta) => {
@@ -36,6 +53,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'refreshExtensionMeta') {
     const meta = writeExtensionMeta();
     sendResponse({ meta, ok: true });
+    return true;
+  }
+
+  if (message.action === 'refreshBadgeState') {
+    const tabUrl = message.url || '';
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const [tab] = tabs;
+      if (tab && tab.id && tabUrl) {
+        updateTabBadge(tab.id, tabUrl);
+      }
+    });
+    sendResponse({ ok: true });
     return true;
   }
 });
@@ -57,46 +86,50 @@ chrome.runtime.onStartup.addListener(() => {
 // Helper function to dynamically manage badges safely with promise error suppression
 function updateTabBadge(tabId, urlString) {
   if (!urlString) return;
-  const url = urlString.toLowerCase();
 
-  const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
+  chrome.storage.local.get(['extensionSettings'], async (result) => {
+    const settings = { ...defaultSettings, ...(result.extensionSettings || {}) };
 
-  // 1. DUAL BADGE SYSTEM SYSTEM: If browsing an active developer repository platform
-  if (gitSites.some(site => url.includes(site))) {
-    chrome.action.setBadgeText({ text: "!", tabId: tabId }).catch(() => { });
-    chrome.action.setBadgeBackgroundColor({ color: "#FF6B35", tabId: tabId }).catch(() => { });
-    return;
-  }
+    if (!settings.showBadge) {
+      chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
+      return;
+    }
 
-  // 2. COUNTER SYSTEM SYSTEM: If on an external destination, count how many times we referenced this site
-  try {
-    const urlObj = new URL(url);
-    let domain = urlObj.hostname.replace('www.', '');
+    const url = urlString.toLowerCase();
+    const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
 
-    chrome.storage.local.get({ clickedUrls: [] }, (result) => {
-      const links = result.clickedUrls;
+    if (gitSites.some(site => url.includes(site))) {
+      chrome.action.setBadgeText({ text: "!", tabId }).catch(() => { });
+      chrome.action.setBadgeBackgroundColor({ color: "#FF6B35", tabId }).catch(() => { });
+      return;
+    }
 
-      const matches = links.filter(item => {
-        try {
-          return new URL(item.url.toLowerCase()).hostname.replace('www.', '') === domain;
-        } catch (e) {
-          return false;
+    try {
+      const urlObj = new URL(url);
+      let domain = urlObj.hostname.replace('www.', '');
+
+      chrome.storage.local.get({ clickedUrls: [] }, (result) => {
+        const links = result.clickedUrls;
+
+        const matches = links.filter(item => {
+          try {
+            return new URL(item.url.toLowerCase()).hostname.replace('www.', '') === domain;
+          } catch (e) {
+            return false;
+          }
+        });
+
+        if (matches.length > 1) {
+          chrome.action.setBadgeText({ text: matches.length.toString(), tabId }).catch(() => { });
+          chrome.action.setBadgeBackgroundColor({ color: "#4f4f4f", tabId }).catch(() => { });
+        } else {
+          chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
         }
       });
-
-      if (matches.length > 0) {
-        // Show uBlock-style counter badge for active link matches
-        chrome.action.setBadgeText({ text: matches.length.toString(), tabId: tabId }).catch(() => { });
-        chrome.action.setBadgeBackgroundColor({ color: "#4f4f4f", tabId: tabId }).catch(() => { });
-      } else {
-        // Safe baseline clear if zero database matches are found
-        chrome.action.setBadgeText({ text: "", tabId: tabId }).catch(() => { });
-      }
-    });
-  } catch (error) {
-    // Graceful exception interceptor for native interior chrome:// paths
-    chrome.action.setBadgeText({ text: "", tabId: tabId }).catch(() => { });
-  }
+    } catch (error) {
+      chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
+    }
+  });
 }
 
 // Listener A: Track active tabs changing or loading URLs
