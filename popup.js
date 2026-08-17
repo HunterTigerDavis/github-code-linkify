@@ -18,30 +18,26 @@ function populateExtensionMeta() {
   });
 }
 
-const defaultSettings = {
-  autoScanOnOpen: true,
-  darkMode: false,
-  showBadge: true
-};
-
 function getSystemDarkMode() {
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-function loadSettings() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['extensionSettings'], (result) => {
-      const saved = result.extensionSettings || {};
-      const darkMode = typeof saved.darkMode === 'boolean' ? saved.darkMode : getSystemDarkMode();
-      const settings = { ...defaultSettings, ...saved, darkMode };
-      chrome.storage.local.set({ extensionSettings: settings });
-      resolve(settings);
-    });
-  });
+async function loadSettings() {
+  const settings = await ExtensionSettings.readSettings();
+  const nextSettings = {
+    ...settings,
+    darkMode: typeof settings.darkMode === 'boolean' ? settings.darkMode : getSystemDarkMode()
+  };
+
+  if (JSON.stringify(settings) !== JSON.stringify(nextSettings)) {
+    ExtensionSettings.writeSettings(nextSettings);
+  }
+
+  return nextSettings;
 }
 
 function saveSettings(settings) {
-  chrome.storage.local.set({ extensionSettings: settings });
+  ExtensionSettings.writeSettings(settings);
 }
 
 function applySettings(settings) {
@@ -208,6 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const settingsButton = document.getElementById('settings-button');
   const settingsMenu = document.getElementById('settings-menu');
+  const addAwarenessButton = document.getElementById('add-awareness');
   const shareRepoButton = document.getElementById('share-repo');
   const listContainer = document.getElementById('list-container');
   const clearBtn = document.getElementById('clear-btn');
@@ -249,6 +246,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
+
+  if (addAwarenessButton) {
+    addAwarenessButton.addEventListener('click', async () => {
+      if (settingsMenu) {
+        settingsMenu.classList.remove('open');
+        settingsMenu.setAttribute('aria-hidden', 'true');
+      }
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.url) {
+        showToast('no page url');
+        return;
+      }
+
+      let hostname = '';
+      try {
+        hostname = new URL(tab.url).hostname.replace(/^www\./, '').toLowerCase();
+      } catch (error) {
+        hostname = '';
+      }
+
+      if (!hostname) {
+        showToast('no page url');
+        return;
+      }
+
+      const currentSettings = await ExtensionSettings.readSettings();
+      const nextSettings = {
+        ...currentSettings,
+        awareBaseUrls: Array.from(new Set([...(currentSettings.awareBaseUrls || []), hostname]))
+      };
+
+      ExtensionSettings.writeSettings(nextSettings);
+      showToast(`${hostname} added to awareness`);
+    });
+  }
 
   if (shareRepoButton) {
     shareRepoButton.addEventListener('click', async () => {

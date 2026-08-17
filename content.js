@@ -53,21 +53,31 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+async function getCodeAwareSettings() {
+  const settings = await ExtensionSettings.readSettings();
+  return ExtensionSettings.normalizeSettings(settings);
+}
+
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
-function isCodeAwarePage() {
-  const enableBaseUrlCheck = true; // Placeholder for future setting to check base URLs
-  const enableKeywordCheck = true; // Placeholder for future setting to check specific path keywords 
-  const awareBaseUrls = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
-  // awareKeywords for paths within GitHub 
-  const awareKeywords = ['/pull/', '/commit/', '/blob/', '/changes/', '/compare/', '/wiki/', '/issues', '/discussions'];
+async function isCodeAwarePage() {
+  const settings = await getCodeAwareSettings();
+  const awareBaseUrls = settings.awareBaseUrls.length
+    ? settings.awareBaseUrls
+    : ExtensionSettings.DEFAULT_AWARE_BASE_URLS;
+  const awareKeywords = settings.awareKeywords.length
+    ? settings.awareKeywords
+    : ExtensionSettings.DEFAULT_AWARE_KEYWORDS;
   let isCodeAware = false;
-  if (enableBaseUrlCheck) { // check on any page with a base URL match
-    isCodeAware = isCodeAware || awareBaseUrls.some(url => window.location.href.includes(url));
-  } 
-  if (enableKeywordCheck) { // just check on specific pages
-    isCodeAware = isCodeAware || awareKeywords.some(keyword => window.location.href.includes(keyword));
+
+  if (settings.enableBaseUrlCheck) {
+    isCodeAware = isCodeAware || awareBaseUrls.some((host) => window.location.href.includes(host));
   }
-  console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware);
+
+  if (settings.enableKeywordCheck) {
+    isCodeAware = isCodeAware || awareKeywords.some((keyword) => window.location.href.includes(keyword));
+  }
+
+  console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware, 'settings:', settings);
   return isCodeAware;
 }
 
@@ -127,8 +137,8 @@ function getCharIndexUnderMouse(event) {
 }
 
 // 1. Global Mouse Tracking: Highlight ONLY the URL text range under the cursor
-document.addEventListener('mousemove', (event) => {
-  if (!isCodeAwarePage()) {
+document.addEventListener('mousemove', async (event) => {
+  if (!(await isCodeAwarePage())) {
     urlHighlight.clear();[2]
     return;
   }
@@ -178,9 +188,9 @@ document.addEventListener('mousemove', (event) => {
 });
 
 // 2. Global Click Capture
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
   console.log('Click event detected');
-  if (!isCodeAwarePage()) return;
+  if (!(await isCodeAwarePage())) return;
 
   const pointInfo = getCharIndexUnderMouse(event);
   if (!pointInfo) return;

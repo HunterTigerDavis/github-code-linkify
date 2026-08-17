@@ -1,18 +1,4 @@
-const defaultSettings = {
-  autoScanOnOpen: true,
-  darkMode: false,
-  showBadge: true
-};
-
-function getExtensionSettings() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['extensionSettings'], (result) => {
-      const settings = { ...defaultSettings, ...(result.extensionSettings || {}) };
-      chrome.storage.local.set({ extensionSettings: settings });
-      resolve(settings);
-    });
-  });
-}
+import './settings.js';
 
 function writeExtensionMeta() {
   const manifest = chrome.runtime.getManifest();
@@ -87,9 +73,7 @@ chrome.runtime.onStartup.addListener(() => {
 function updateTabBadge(tabId, urlString) {
   if (!urlString) return;
 
-  chrome.storage.local.get(['extensionSettings'], async (result) => {
-    const settings = { ...defaultSettings, ...(result.extensionSettings || {}) };
-
+  ExtensionSettings.readSettings().then((settings) => {
     if (!settings.showBadge) {
       chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
       return;
@@ -119,7 +103,7 @@ function updateTabBadge(tabId, urlString) {
           }
         });
 
-        if (matches.length > 1) {
+        if (matches.length > 0) {
           chrome.action.setBadgeText({ text: matches.length.toString(), tabId }).catch(() => { });
           chrome.action.setBadgeBackgroundColor({ color: "#4f4f4f", tabId }).catch(() => { });
         } else {
