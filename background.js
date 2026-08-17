@@ -1,28 +1,57 @@
-function cacheExtensionMeta() {
+function writeExtensionMeta() {
   const manifest = chrome.runtime.getManifest();
+
   const meta = {
-    name: manifest.name || 'Extension',
-    description: manifest.description || '',
-    repositoryUrl: manifest.homepage_url || (manifest.repository && manifest.repository.url) || ''
+    version: manifest.version ?? '',
+    name: manifest.name ?? 'Github Code Linkify',
+    description: manifest.description ?? '',
+    repositoryUrl: manifest.homepage_url ?? ''
   };
 
-  chrome.storage.local.set({ extensionMeta: meta }, () => {
-    console.log('Extension metadata cached:', meta);
+  chrome.storage.local.set({ extensionMeta: meta });
+  return meta;
+}
+
+function readExtensionMeta() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['extensionMeta'], (result) => {
+      const cached = result.extensionMeta;
+
+      if (cached && cached.version) {
+        resolve(cached);
+        return;
+      }
+
+      resolve(writeExtensionMeta());
+    });
   });
 }
 
-// Refresh the cached metadata whenever the background script initializes.
-cacheExtensionMeta();
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'getExtensionMeta') {
+    readExtensionMeta().then((meta) => {
+      sendResponse({ meta });
+    });
+    return true;
+  }
 
-// Auto-trigger popup when extension reloads/installs.
+  if (message.type === 'refreshExtensionMeta') {
+    const meta = writeExtensionMeta();
+    sendResponse({ meta, ok: true });
+    return true;
+  }
+});
+
+readExtensionMeta();
+
 chrome.runtime.onInstalled.addListener(() => {
-  cacheExtensionMeta();
+  writeExtensionMeta();
   chrome.action.openPopup().catch(() => { });
   console.log("Extension loaded, popup triggered");
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  cacheExtensionMeta();
+  readExtensionMeta();
 });
 
 // Helper function to dynamically manage badges safely with promise error suppression

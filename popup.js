@@ -1,27 +1,20 @@
-function getCachedExtensionMeta() {
-  const manifest = chrome.runtime.getManifest();
-
-  return {
-    name: manifest.name ?? 'Extension',
-    description: manifest.description ?? '',
-    repositoryUrl: manifest.homepage_url ?? manifest.repository?.url ?? ''
-  };
-}
-
-function populateExtensionMeta() {
+function renderExtensionMeta(meta = {}) {
   const nameEl = document.getElementById('extension-name');
   const descEl = document.getElementById('extension-description');
   const repoEl = document.getElementById('extension-repo');
+  const { name, description, repositoryUrl } = meta;
 
-  chrome.storage.local.get(['extensionMeta'], (result) => {
-    const meta = result.extensionMeta ?? getCachedExtensionMeta();
-    const { name, description, repositoryUrl } = meta;
+  if (nameEl) nameEl.textContent = name;
+  if (descEl) descEl.textContent = description;
+  if (repoEl && repositoryUrl) {
+    repoEl.href = repositoryUrl;
+  }
+}
 
-    if (nameEl) nameEl.textContent = name ?? 'Extension';
-    if (descEl) descEl.textContent = description ?? '';
-    if (repoEl && repositoryUrl) {
-      repoEl.href = repositoryUrl;
-    }
+function populateExtensionMeta() {
+  chrome.runtime.sendMessage({ type: 'getExtensionMeta' }, (response) => {
+    const meta = response && response.meta ? response.meta : {};
+    renderExtensionMeta(meta);
   });
 }
 
