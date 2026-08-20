@@ -273,9 +273,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const currentSettings = await ExtensionSettings.readSettings();
+      const awareBaseUrls = ExtensionSettings.normalizeAwareHosts(currentSettings.awareBaseUrls || []);
+
+      if (awareBaseUrls.includes(hostname)) {
+        showToast(`${hostname} already in awareness`);
+        return;
+      }
+
       const nextSettings = {
         ...currentSettings,
-        awareBaseUrls: Array.from(new Set([...(currentSettings.awareBaseUrls || []), hostname]))
+        awareBaseUrls: Array.from(new Set([...awareBaseUrls, hostname]))
       };
 
       ExtensionSettings.writeSettings(nextSettings);
