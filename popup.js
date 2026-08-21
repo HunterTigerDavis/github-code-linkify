@@ -12,9 +12,11 @@ function renderExtensionMeta(meta = {}) {
 }
 
 function populateExtensionMeta() {
-  chrome.runtime.sendMessage({ type: 'getExtensionMeta' }, (response) => {
-    const meta = response && response.meta ? response.meta : {};
-    renderExtensionMeta(meta);
+  const manifest = chrome.runtime.getManifest();
+  renderExtensionMeta({
+    name: manifest.name,
+    description: manifest.description,
+    repositoryUrl: manifest.homepage_url
   });
 }
 
@@ -295,27 +297,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     shareRepoButton.addEventListener('click', async () => {
       settingsMenu.classList.remove('open');
 
-      chrome.runtime.sendMessage({ type: 'getExtensionMeta' }, async (response) => {
-        const repoUrl = (response && response.meta && response.meta.repositoryUrl) || chrome.runtime.getManifest().homepage_url || '';
+      const repoUrl = chrome.runtime.getManifest().homepage_url || '';
 
-        if (!repoUrl) {
-          showToast('link copied');
-          return;
-        }
+      if (!repoUrl) {
+        showToast('link copied');
+        return;
+      }
 
-        try {
-          await navigator.clipboard.writeText(repoUrl);
-          showToast('link copied');
-        } catch (error) {
-          const tempInput = document.createElement('textarea');
-          tempInput.value = repoUrl;
-          document.body.appendChild(tempInput);
-          tempInput.select();
-          document.execCommand('copy');
-          document.body.removeChild(tempInput);
-          showToast('link copied');
-        }
-      });
+      try {
+        await navigator.clipboard.writeText(repoUrl);
+        showToast('link copied');
+      } catch (error) {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = repoUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('link copied');
+      }
     });
   }
 

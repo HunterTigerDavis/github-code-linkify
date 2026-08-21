@@ -61,20 +61,14 @@ async function getCodeAwareSettings() {
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 async function isCodeAwarePage() {
   const settings = await getCodeAwareSettings();
-  const awareBaseUrls = settings.awareBaseUrls.length
-    ? settings.awareBaseUrls
-    : ExtensionSettings.DEFAULT_AWARE_BASE_URLS;
-  const awareKeywords = settings.awareKeywords.length
-    ? settings.awareKeywords
-    : ExtensionSettings.DEFAULT_AWARE_KEYWORDS;
   let isCodeAware = false;
 
   if (settings.enableBaseUrlCheck) {
-    isCodeAware = isCodeAware || awareBaseUrls.some((host) => window.location.href.includes(host));
+    isCodeAware = isCodeAware || settings.awareBaseUrls.some((host) => window.location.href.includes(host));
   }
 
   if (settings.enableKeywordCheck) {
-    isCodeAware = isCodeAware || awareKeywords.some((keyword) => window.location.href.includes(keyword));
+    isCodeAware = isCodeAware || settings.awareKeywords.some((keyword) => window.location.href.includes(keyword));
   }
 
   console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware, 'settings:', settings);

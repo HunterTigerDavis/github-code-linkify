@@ -1,47 +1,6 @@
 import './settings.js';
 
-function writeExtensionMeta() {
-  const manifest = chrome.runtime.getManifest();
-
-  const meta = {
-    version: manifest.version ?? '',
-    name: manifest.name ?? 'Github Code Linkify',
-    description: manifest.description ?? '',
-    repositoryUrl: manifest.homepage_url ?? ''
-  };
-
-  chrome.storage.local.set({ extensionMeta: meta });
-  return meta;
-}
-
-function readExtensionMeta() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['extensionMeta'], (result) => {
-      const cached = result.extensionMeta;
-      if (cached && cached.version) {
-        resolve(cached);
-        return;
-      }
-      resolve(writeExtensionMeta());
-    });
-  });
-}
-
-// background listener for popup & content script requests
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'getExtensionMeta') {
-    readExtensionMeta().then((meta) => {
-      sendResponse({ meta });
-    });
-    return true;
-  }
-
-  if (message.type === 'refreshExtensionMeta') {
-    const meta = writeExtensionMeta();
-    sendResponse({ meta, ok: true });
-    return true;
-  }
-
   if (message.action === 'refreshBadgeState') {
     const tabUrl = message.url || '';
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -55,18 +14,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-readExtensionMeta();
-
 chrome.runtime.onInstalled.addListener(() => {
-  // Sync the extension metadata to local storage on install
-  writeExtensionMeta();
   // open chrome extension popup on install
   chrome.action.openPopup().catch(() => { });
   console.log("Extension loaded, popup triggered");
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  readExtensionMeta();
 });
 
 // Helper function to dynamically manage badges safely with promise error suppression

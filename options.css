@@ -117,6 +117,13 @@ h1 {
   margin-bottom: 16px;
 }
 
+.section-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .section-heading h2 {
   margin-bottom: 4px;
   font-size: 18px;
@@ -126,6 +133,15 @@ h1 {
   margin-bottom: 0;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.clear-list-button {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  color: var(--text);
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 .setting-grid {
@@ -278,6 +294,16 @@ button:hover {
 
   .settings-section {
     padding: 16px;
+  }
+
+  .section-heading-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .clear-list-button {
+    width: 100%;
   }
 
   .add-form {

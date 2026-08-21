@@ -1,4 +1,4 @@
-const SETTINGS_KEY = 'extensionSettings';
+const LEGACY_SETTINGS_KEY = 'extensionSettings';
 
 const DEFAULT_AWARE_BASE_URLS = [
   'github.com',
@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS = {
   awareKeywords: [...DEFAULT_AWARE_KEYWORDS]
 };
 
+const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
+
 function normalizeAwareHosts(hosts) {
   if (!Array.isArray(hosts)) {
     return [];
@@ -36,7 +38,8 @@ function normalizeAwareHosts(hosts) {
 
   return hosts
     .map((host) => String(host).toLowerCase().replace(/^www\./, '').trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((host, index, values) => values.indexOf(host) === index);
 }
 
 function normalizeAwareKeywords(keywords) {
@@ -46,15 +49,23 @@ function normalizeAwareKeywords(keywords) {
 
   return keywords
     .map((keyword) => String(keyword).trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((keyword, index, values) => values.indexOf(keyword) === index);
+}
+
+function normalizeBoolean(value, fallback) {
+  return typeof value === 'boolean' ? value : fallback;
 }
 
 function normalizeSettings(rawSettings = {}) {
   const source = rawSettings && typeof rawSettings === 'object' ? rawSettings : {};
 
   return {
-    ...DEFAULT_SETTINGS,
-    ...source,
+    autoScanOnOpen: normalizeBoolean(source.autoScanOnOpen, DEFAULT_SETTINGS.autoScanOnOpen),
+    darkMode: normalizeBoolean(source.darkMode, DEFAULT_SETTINGS.darkMode),
+    showBadge: normalizeBoolean(source.showBadge, DEFAULT_SETTINGS.showBadge),
+    enableBaseUrlCheck: normalizeBoolean(source.enableBaseUrlCheck, DEFAULT_SETTINGS.enableBaseUrlCheck),
+    enableKeywordCheck: normalizeBoolean(source.enableKeywordCheck, DEFAULT_SETTINGS.enableKeywordCheck),
     awareBaseUrls: normalizeAwareHosts(source.awareBaseUrls ?? DEFAULT_AWARE_BASE_URLS),
     awareKeywords: normalizeAwareKeywords(source.awareKeywords ?? DEFAULT_AWARE_KEYWORDS)
   };
@@ -62,10 +73,28 @@ function normalizeSettings(rawSettings = {}) {
 
 function readSettings() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([SETTINGS_KEY], (result) => {
-      const saved = result[SETTINGS_KEY] || {};
+    chrome.storage.local.get([...SETTING_KEYS, LEGACY_SETTINGS_KEY], (result) => {
+      const legacySettings = result[LEGACY_SETTINGS_KEY] && typeof result[LEGACY_SETTINGS_KEY] === 'object'
+        ? result[LEGACY_SETTINGS_KEY]
+        : {};
+      const saved = {};
+
+      SETTING_KEYS.forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(result, key)) {
+          saved[key] = result[key];
+        } else if (Object.prototype.hasOwnProperty.call(legacySettings, key)) {
+          saved[key] = legacySettings[key];
+        }
+      });
+
       const nextSettings = normalizeSettings(saved);
-      chrome.storage.local.set({ [SETTINGS_KEY]: nextSettings });
+      const hasLegacySettings = Object.prototype.hasOwnProperty.call(result, LEGACY_SETTINGS_KEY);
+      const hasMissingSettings = SETTING_KEYS.some((key) => !Object.prototype.hasOwnProperty.call(result, key));
+
+      if (hasLegacySettings || hasMissingSettings) {
+        writeSettings(nextSettings);
+      }
+
       resolve(nextSettings);
     });
   });
@@ -73,7 +102,9 @@ function readSettings() {
 
 function writeSettings(nextSettings) {
   const normalized = normalizeSettings(nextSettings);
-  chrome.storage.local.set({ [SETTINGS_KEY]: normalized });
+  chrome.storage.local.set(normalized, () => {
+    chrome.storage.local.remove(LEGACY_SETTINGS_KEY);
+  });
   return normalized;
 }
 
@@ -83,12 +114,14 @@ function watchSettings(onChange) {
   }
 
   const listener = (changes, namespace) => {
-    if (namespace !== 'local' || !changes[SETTINGS_KEY]) {
+    const hasSettingChange = SETTING_KEYS.some((key) => changes[key]);
+    const hasLegacyChange = !!changes[LEGACY_SETTINGS_KEY];
+
+    if (namespace !== 'local' || (!hasSettingChange && !hasLegacyChange)) {
       return;
     }
 
-    const nextValue = changes[SETTINGS_KEY].newValue || {};
-    onChange(normalizeSettings(nextValue));
+    readSettings().then(onChange);
   };
 
   chrome.storage.onChanged.addListener(listener);
@@ -99,12 +132,14 @@ function watchSettings(onChange) {
 }
 
 globalThis.ExtensionSettings = {
-  SETTINGS_KEY,
+  LEGACY_SETTINGS_KEY,
+  SETTING_KEYS,
   DEFAULT_SETTINGS,
   DEFAULT_AWARE_BASE_URLS,
   DEFAULT_AWARE_KEYWORDS,
   normalizeAwareHosts,
   normalizeAwareKeywords,
+  normalizeBoolean,
   normalizeSettings,
   readSettings,
   writeSettings,

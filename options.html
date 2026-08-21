@@ -69,9 +69,12 @@
         </section>
 
         <section class="settings-section" aria-labelledby="sites-heading">
-            <div class="section-heading">
-                <h2 id="sites-heading">Aware sites</h2>
-                <p>Add hostnames or base URL fragments that should always be treated as code-aware.</p>
+            <div class="section-heading section-heading-row">
+                <div>
+                    <h2 id="sites-heading">Aware sites</h2>
+                    <p>Add hostnames or base URL fragments that should always be treated as code-aware.</p>
+                </div>
+                <button class="clear-list-button" id="clear-sites" type="button">Clear all</button>
             </div>
             <form class="add-form" id="site-form">
                 <label class="sr-only" for="site-input">Site hostname or base URL</label>
@@ -82,9 +85,12 @@
         </section>
 
         <section class="settings-section" aria-labelledby="keywords-heading">
-            <div class="section-heading">
-                <h2 id="keywords-heading">Aware keywords</h2>
-                <p>Add URL fragments such as <code>/pull/</code> or <code>/review/</code> to recognize matching pages.</p>
+            <div class="section-heading section-heading-row">
+                <div>
+                    <h2 id="keywords-heading">Aware keywords</h2>
+                    <p>Add URL fragments such as <code>/pull/</code> or <code>/review/</code> to recognize matching pages.</p>
+                </div>
+                <button class="clear-list-button" id="clear-keywords" type="button">Clear all</button>
             </div>
             <form class="add-form" id="keyword-form">
                 <label class="sr-only" for="keyword-input">URL keyword</label>
@@ -95,7 +101,7 @@
         </section>
 
         <footer class="options-footer">
-            <button class="reset-button" id="reset-settings" type="button">Reset settings</button>
+            <button class="reset-button" id="reset-settings" type="button">Reset all settings</button>
             <span id="save-status" role="status" aria-live="polite"></span>
         </footer>
     </main>

@@ -3,14 +3,12 @@ const settingsApi = globalThis.ExtensionSettings;
 let currentSettings = settingsApi.normalizeSettings({});
 
 function populateOptionsMeta() {
-  chrome.runtime.sendMessage({ type: 'getExtensionMeta' }, (response) => {
-    const repositoryUrl = response && response.meta ? response.meta.repositoryUrl : '';
-    const repositoryLink = document.getElementById('options-repo');
+  const repositoryUrl = chrome.runtime.getManifest().homepage_url || '';
+  const repositoryLink = document.getElementById('options-repo');
 
-    if (repositoryLink && repositoryUrl) {
-      repositoryLink.href = repositoryUrl;
-    }
-  });
+  if (repositoryLink && repositoryUrl) {
+    repositoryLink.href = repositoryUrl;
+  }
 }
 
 function showStatus(message) {
@@ -115,6 +113,14 @@ function removeKeyword(keyword) {
   persistSettings({ ...currentSettings, awareKeywords: keywords }, 'Keyword removed');
 }
 
+function clearSites() {
+  persistSettings({ ...currentSettings, awareBaseUrls: [] }, 'All sites cleared');
+}
+
+function clearKeywords() {
+  persistSettings({ ...currentSettings, awareKeywords: [] }, 'All keywords cleared');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   populateOptionsMeta();
   renderSettings(await settingsApi.readSettings());
@@ -127,6 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('site-form').addEventListener('submit', addSite);
   document.getElementById('keyword-form').addEventListener('submit', addKeyword);
+  document.getElementById('clear-sites').addEventListener('click', clearSites);
+  document.getElementById('clear-keywords').addEventListener('click', clearKeywords);
   document.getElementById('reset-settings').addEventListener('click', () => {
     persistSettings({ ...settingsApi.DEFAULT_SETTINGS, awareBaseUrls: [...settingsApi.DEFAULT_AWARE_BASE_URLS], awareKeywords: [...settingsApi.DEFAULT_AWARE_KEYWORDS] }, 'Settings reset');
   });
