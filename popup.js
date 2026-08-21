@@ -209,7 +209,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const addAwarenessButton = document.getElementById('add-awareness');
   const shareRepoButton = document.getElementById('share-repo');
   const openOptionsButton = document.getElementById('open-options');
-  const listContainer = document.getElementById('list-container');
   const clearBtn = document.getElementById('clear-btn');
 
   if (settingsButton && settingsMenu) {

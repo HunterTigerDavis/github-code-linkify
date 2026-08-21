@@ -1,5 +1,3 @@
-const LEGACY_SETTINGS_KEY = 'extensionSettings';
-
 const DEFAULT_AWARE_BASE_URLS = [
   'github.com',
   'gitlab.com',
@@ -73,38 +71,23 @@ function normalizeSettings(rawSettings = {}) {
 
 function readSettings() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([...SETTING_KEYS, LEGACY_SETTINGS_KEY], (result) => {
-      const legacySettings = result[LEGACY_SETTINGS_KEY] && typeof result[LEGACY_SETTINGS_KEY] === 'object'
-        ? result[LEGACY_SETTINGS_KEY]
-        : {};
+    chrome.storage.local.get(SETTING_KEYS, (result) => {
       const saved = {};
 
       SETTING_KEYS.forEach((key) => {
         if (Object.prototype.hasOwnProperty.call(result, key)) {
           saved[key] = result[key];
-        } else if (Object.prototype.hasOwnProperty.call(legacySettings, key)) {
-          saved[key] = legacySettings[key];
         }
       });
 
-      const nextSettings = normalizeSettings(saved);
-      const hasLegacySettings = Object.prototype.hasOwnProperty.call(result, LEGACY_SETTINGS_KEY);
-      const hasMissingSettings = SETTING_KEYS.some((key) => !Object.prototype.hasOwnProperty.call(result, key));
-
-      if (hasLegacySettings || hasMissingSettings) {
-        writeSettings(nextSettings);
-      }
-
-      resolve(nextSettings);
+      resolve(normalizeSettings(saved));
     });
   });
 }
 
 function writeSettings(nextSettings) {
   const normalized = normalizeSettings(nextSettings);
-  chrome.storage.local.set(normalized, () => {
-    chrome.storage.local.remove(LEGACY_SETTINGS_KEY);
-  });
+  chrome.storage.local.set(normalized);
   return normalized;
 }
 
@@ -115,9 +98,8 @@ function watchSettings(onChange) {
 
   const listener = (changes, namespace) => {
     const hasSettingChange = SETTING_KEYS.some((key) => changes[key]);
-    const hasLegacyChange = !!changes[LEGACY_SETTINGS_KEY];
 
-    if (namespace !== 'local' || (!hasSettingChange && !hasLegacyChange)) {
+    if (namespace !== 'local' || !hasSettingChange) {
       return;
     }
 
@@ -132,7 +114,6 @@ function watchSettings(onChange) {
 }
 
 globalThis.ExtensionSettings = {
-  LEGACY_SETTINGS_KEY,
   SETTING_KEYS,
   DEFAULT_SETTINGS,
   DEFAULT_AWARE_BASE_URLS,

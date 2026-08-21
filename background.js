@@ -84,11 +84,6 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
   });
 });
 
-// Extension icon click listener fallback
-chrome.action.onClicked.addListener(async (tab) => {
-  console.log("Extension icon clicked on:", tab.url || '');
-});
-
 // Listen for messages from content.js to safely save URLs to storage
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "saveUrl") {

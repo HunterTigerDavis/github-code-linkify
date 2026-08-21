@@ -53,14 +53,9 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-async function getCodeAwareSettings() {
-  const settings = await ExtensionSettings.readSettings();
-  return ExtensionSettings.normalizeSettings(settings);
-}
-
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 async function isCodeAwarePage() {
-  const settings = await getCodeAwareSettings();
+  const settings = await ExtensionSettings.readSettings();
   let isCodeAware = false;
 
   if (settings.enableBaseUrlCheck) {
@@ -75,26 +70,29 @@ async function isCodeAwarePage() {
   return isCodeAware;
 }
 
-// Scan text nodes under `root` and add highlights for all URL matches
+// Future use: persist highlights for URLs scanned, found, or clicked on the page.
 function highlightUrlsInTextNodes(root = document.body) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
   const added = [];
   let node;
+
   while ((node = walker.nextNode())) {
     const text = node.nodeValue || '';
     const positions = findUrlPositions(text);
-    positions.forEach(pos => {
+
+    positions.forEach((pos) => {
       try {
         const range = document.createRange();
         range.setStart(node, pos.start);
         range.setEnd(node, pos.end);
         urlHighlight.add(range);
         added.push({ node, pos });
-      } catch (e) {
-        // ignore nodes that cannot be ranged
+      } catch (error) {
+        // Ignore nodes that cannot be ranged.
       }
     });
   }
+
   return added;
 }
 
