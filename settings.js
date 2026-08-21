@@ -21,7 +21,7 @@ const DEFAULT_AWARE_KEYWORDS = [
 
 const DEFAULT_SETTINGS = {
   autoScanOnOpen: false,
-  darkMode: false,
+  darkMode: true,
   showBadge: true,
   enableBaseUrlCheck: true,
   enableKeywordCheck: true,
