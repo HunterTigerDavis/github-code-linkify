@@ -206,6 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const settingsMenu = document.getElementById('settings-menu');
   const addAwarenessButton = document.getElementById('add-awareness');
   const shareRepoButton = document.getElementById('share-repo');
+  const openOptionsButton = document.getElementById('open-options');
   const listContainer = document.getElementById('list-container');
   const clearBtn = document.getElementById('clear-btn');
 
@@ -315,6 +316,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           showToast('link copied');
         }
       });
+    });
+  }
+
+  if (openOptionsButton) {
+    openOptionsButton.addEventListener('click', () => {
+      settingsMenu?.classList.remove('open');
+      settingsMenu?.setAttribute('aria-hidden', 'true');
+      chrome.runtime.openOptionsPage();
     });
   }
 
