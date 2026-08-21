@@ -1,5 +1,21 @@
-// Auto-trigger popup when extension reloads/installs
+import './settings.js';
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'refreshBadgeState') {
+    const tabUrl = message.url || '';
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const [tab] = tabs;
+      if (tab && tab.id && tabUrl) {
+        updateTabBadge(tab.id, tabUrl);
+      }
+    });
+    sendResponse({ ok: true });
+    return true;
+  }
+});
+
 chrome.runtime.onInstalled.addListener(() => {
+  // open chrome extension popup on install
   chrome.action.openPopup().catch(() => { });
   console.log("Extension loaded, popup triggered");
 });
@@ -7,46 +23,48 @@ chrome.runtime.onInstalled.addListener(() => {
 // Helper function to dynamically manage badges safely with promise error suppression
 function updateTabBadge(tabId, urlString) {
   if (!urlString) return;
-  const url = urlString.toLowerCase();
 
-  const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
+  ExtensionSettings.readSettings().then((settings) => {
+    if (!settings.showBadge) {
+      chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
+      return;
+    }
 
-  // 1. DUAL BADGE SYSTEM SYSTEM: If browsing an active developer repository platform
-  if (gitSites.some(site => url.includes(site))) {
-    chrome.action.setBadgeText({ text: "!", tabId: tabId }).catch(() => { });
-    chrome.action.setBadgeBackgroundColor({ color: "#FF6B35", tabId: tabId }).catch(() => { });
-    return;
-  }
+    const url = urlString.toLowerCase();
+    const gitSites = ['github.com', 'gitlab.com', 'bitbucket.org', 'azure.com/repos', 'azure.com/git'];
 
-  // 2. COUNTER SYSTEM SYSTEM: If on an external destination, count how many times we referenced this site
-  try {
-    const urlObj = new URL(url);
-    let domain = urlObj.hostname.replace('www.', '');
+    if (gitSites.some(site => url.includes(site))) {
+      chrome.action.setBadgeText({ text: "!", tabId }).catch(() => { });
+      chrome.action.setBadgeBackgroundColor({ color: "#FF6B35", tabId }).catch(() => { });
+      return;
+    }
 
-    chrome.storage.local.get({ clickedUrls: [] }, (result) => {
-      const links = result.clickedUrls;
+    try {
+      const urlObj = new URL(url);
+      let domain = urlObj.hostname.replace('www.', '');
 
-      const matches = links.filter(item => {
-        try {
-          return new URL(item.url.toLowerCase()).hostname.replace('www.', '') === domain;
-        } catch (e) {
-          return false;
+      chrome.storage.local.get({ clickedUrls: [] }, (result) => {
+        const links = result.clickedUrls;
+
+        const matches = links.filter(item => {
+          try {
+            return new URL(item.url.toLowerCase()).hostname.replace('www.', '') === domain;
+          } catch (e) {
+            return false;
+          }
+        });
+
+        if (matches.length > 0) {
+          chrome.action.setBadgeText({ text: matches.length.toString(), tabId }).catch(() => { });
+          chrome.action.setBadgeBackgroundColor({ color: "#4f4f4f", tabId }).catch(() => { });
+        } else {
+          chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
         }
       });
-
-      if (matches.length > 0) {
-        // Show uBlock-style counter badge for active link matches
-        chrome.action.setBadgeText({ text: matches.length.toString(), tabId: tabId }).catch(() => { });
-        chrome.action.setBadgeBackgroundColor({ color: "#4f4f4f", tabId: tabId }).catch(() => { });
-      } else {
-        // Safe baseline clear if zero database matches are found
-        chrome.action.setBadgeText({ text: "", tabId: tabId }).catch(() => { });
-      }
-    });
-  } catch (error) {
-    // Graceful exception interceptor for native interior chrome:// paths
-    chrome.action.setBadgeText({ text: "", tabId: tabId }).catch(() => { });
-  }
+    } catch (error) {
+      chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
+    }
+  });
 }
 
 // Listener A: Track active tabs changing or loading URLs
@@ -64,11 +82,6 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
       updateTabBadge(activeInfo.tabId, tab.url);
     }
   });
-});
-
-// Extension icon click listener fallback
-chrome.action.onClicked.addListener(async (tab) => {
-  console.log("Extension icon clicked on:", tab.url || '');
 });
 
 // Listen for messages from content.js to safely save URLs to storage

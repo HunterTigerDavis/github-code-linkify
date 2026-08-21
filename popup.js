@@ -1,90 +1,362 @@
-// V0.4: Fetch the stored (clicked) URLs, group them cleanly by site domain, and output them as a bulleted list
-document.addEventListener('DOMContentLoaded', () => {
+function renderExtensionMeta(meta = {}) {
+  const nameEl = document.getElementById('extension-name');
+  const descEl = document.getElementById('extension-description');
+  const repoEl = document.getElementById('extension-repo');
+  const { name, description, repositoryUrl } = meta;
+
+  if (nameEl) nameEl.textContent = name;
+  if (descEl) descEl.textContent = description;
+  if (repoEl && repositoryUrl) {
+    repoEl.href = repositoryUrl;
+  }
+}
+
+function populateExtensionMeta() {
+  const manifest = chrome.runtime.getManifest();
+  renderExtensionMeta({
+    name: manifest.name,
+    description: manifest.description,
+    repositoryUrl: manifest.homepage_url
+  });
+}
+
+function getSystemDarkMode() {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+async function loadSettings() {
+  const settings = await ExtensionSettings.readSettings();
+  const nextSettings = {
+    ...settings,
+    darkMode: typeof settings.darkMode === 'boolean' ? settings.darkMode : getSystemDarkMode()
+  };
+
+  if (JSON.stringify(settings) !== JSON.stringify(nextSettings)) {
+    ExtensionSettings.writeSettings(nextSettings);
+  }
+
+  return nextSettings;
+}
+
+function saveSettings(settings) {
+  ExtensionSettings.writeSettings(settings);
+}
+
+function applySettings(settings) {
+  document.body.classList.toggle('dark-mode', !!settings.darkMode);
+
+  document.querySelectorAll('.setting-toggle').forEach((button) => {
+    const key = button.dataset.setting;
+    const state = !!settings[key];
+    const toggle = button.querySelector('.toggle-state');
+
+    if (toggle) {
+      toggle.textContent = state ? 'On' : 'Off';
+    }
+  });
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.classList.add('visible');
+
+  clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = setTimeout(() => {
+    toast.classList.remove('visible');
+  }, 1800);
+}
+
+function getHostname(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch (error) {
+    return '';
+  }
+}
+
+function setSavedLinksCount(count) {
+  const totalCountEl = document.getElementById('saved-links-count');
+  if (totalCountEl) {
+    totalCountEl.textContent = `(${count})`;
+  }
+}
+
+function renderSavedLinks() {
   const listContainer = document.getElementById('list-container');
-  const clearBtn = document.getElementById('clear-btn');
+  if (!listContainer) return;
 
-  function loadAndGroupLinks() {
-    chrome.storage.local.get({ clickedUrls: [] }, (result) => {
-      const links = result.clickedUrls;
-      listContainer.innerHTML = '';
+  chrome.storage.local.get({ clickedUrls: [] }, (result) => {
+    const links = Array.isArray(result.clickedUrls) ? result.clickedUrls : [];
+    setSavedLinksCount(links.length);
+    listContainer.innerHTML = '';
 
-      if (links.length === 0) {
-        listContainer.innerHTML = '<div class="empty-msg">No clicked URLs saved yet.</div>';
+    if (links.length === 0) {
+      listContainer.innerHTML = '<div class="empty-msg">No clicked URLs saved yet.</div>';
+      return;
+    }
+
+    const groupedData = {};
+
+    links.forEach(item => {
+      const domain = getHostname(item.url);
+
+      if (!domain) {
+        const fallback = 'Other Links';
+        if (!groupedData[fallback]) groupedData[fallback] = [];
+        groupedData[fallback].push(item);
         return;
       }
 
-      // 1. Group individual links by their base site URL (Domain)
-      const groupedData = {};
+      if (!groupedData[domain]) {
+        groupedData[domain] = [];
+      }
+      groupedData[domain].push(item);
+    });
 
-      links.forEach(item => {
-        try {
-          const urlObj = new URL(item.url);
-          // Convert "://google.com" or "://google.com" into a clean "google.com" domain look
-          let domain = urlObj.hostname.replace('www.', '');
+    const sortedDomains = Object.keys(groupedData).sort();
 
-          if (!groupedData[domain]) {
-            groupedData[domain] = [];
-          }
-          groupedData[domain].push(item);
-        } catch (e) {
-          // Fallback if the saved text somehow isn't a valid full URL parse
-          const fallback = "Other Links";
-          if (!groupedData[fallback]) groupedData[fallback] = [];
-          groupedData[fallback].push(item);
-        }
+    sortedDomains.forEach(domain => {
+      const domainSection = document.createElement('div');
+      domainSection.className = 'domain-container';
+
+      const domainHeaderRow = document.createElement('div');
+      domainHeaderRow.style.display = 'flex';
+      domainHeaderRow.style.alignItems = 'center';
+      domainHeaderRow.style.justifyContent = 'space-between';
+      domainHeaderRow.style.gap = '8px';
+
+      const domainHeader = document.createElement('span');
+      domainHeader.className = 'domain-title';
+      domainHeader.textContent = `${domain} (${groupedData[domain].length})`;
+      domainHeader.style.flex = '1';
+      domainHeader.style.borderBottom = 'none';
+      domainHeaderRow.appendChild(domainHeader);
+
+      const clearDomainBtn = document.createElement('button');
+      clearDomainBtn.type = 'button';
+      clearDomainBtn.textContent = 'Clear';
+      clearDomainBtn.style.padding = '3px 6px';
+      clearDomainBtn.addEventListener('click', () => {
+        chrome.storage.local.get({ clickedUrls: [] }, (storageResult) => {
+          const filtered = (storageResult.clickedUrls || []).filter((item) => {
+            const itemHostname = getHostname(item.url);
+            if (domain === 'Other Links') {
+              return !!itemHostname;
+            }
+            return itemHostname !== domain;
+          });
+          chrome.storage.local.set({ clickedUrls: filtered }, () => renderSavedLinks());
+        });
       });
+      domainHeaderRow.appendChild(clearDomainBtn);
+      domainSection.appendChild(domainHeaderRow);
 
-      // 2. Sort the domain keys alphabetically
-      const sortedDomains = Object.keys(groupedData).sort();
+      const bulletList = document.createElement('ul');
+      bulletList.className = 'url-bullet-list';
 
-      // 3. Build and append the grouped bulleted structure to the HTML
-      sortedDomains.forEach(domain => {
-        const domainSection = document.createElement('div');
-        domainSection.className = 'domain-container';
+      groupedData[domain].forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'url-item';
 
-        // Header element for the Site group
-        const domainHeader = document.createElement('span');
-        domainHeader.className = 'domain-title';
-        domainHeader.textContent = `${domain} (${groupedData[domain].length})`;
-        domainSection.appendChild(domainHeader);
-
-        // Bulleted list element (<ul>) for this site's items
-        const bulletList = document.createElement('ul');
-        bulletList.className = 'url-bullet-list';
-
-        groupedData[domain].forEach(item => {
-          const li = document.createElement('li');
-          li.className = 'url-item';
-
-          const a = document.createElement('a');
-          a.className = 'url-link';
-          a.href = item.url;
-          a.target = '_blank';
-
-          // Truncate overly massive URLs inside the popup view to prevent visual clipping
-          a.textContent = item.url.length > 50 ? item.url.substring(0, 47) + '...' : item.url;
-          a.title = item.url; // Tooltip still shows full URL on mouse hover
-
-          li.appendChild(a);
-          bulletList.appendChild(li);
+        const a = document.createElement('a');
+        a.className = 'url-link';
+        a.href = item.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.title = item.url;
+        a.textContent = item.url.length > 50 ? item.url.substring(0, 47) + '...' : item.url;
+        a.addEventListener('click', (event) => {
+          event.preventDefault();
+          recordClickedUrl(item.url);
+          window.open(item.url, '_blank', 'noopener,noreferrer');
+          renderSavedLinks();
         });
 
-        domainSection.appendChild(bulletList);
-        listContainer.appendChild(domainSection);
+        li.appendChild(a);
+        bulletList.appendChild(li);
       });
+
+      domainSection.appendChild(bulletList);
+      listContainer.appendChild(domainSection);
+    });
+  });
+}
+
+function recordClickedUrl(url) {
+  if (!url) return;
+
+  chrome.storage.local.get({ clickedUrls: [] }, (result) => {
+    const currentList = Array.isArray(result.clickedUrls) ? result.clickedUrls : [];
+    const filtered = currentList.filter(item => item && item.url !== url);
+    filtered.unshift({ url, timestamp: new Date().toISOString() });
+
+    chrome.storage.local.set({ clickedUrls: filtered }, () => renderSavedLinks());
+  });
+}
+
+// Fetch the stored (clicked) URLs, group them cleanly by site domain, and output them as a bulleted list
+document.addEventListener('DOMContentLoaded', async () => {
+  populateExtensionMeta();
+
+  let settings = await loadSettings();
+  applySettings(settings);
+
+  const settingsButton = document.getElementById('settings-button');
+  const settingsMenu = document.getElementById('settings-menu');
+  const addAwarenessButton = document.getElementById('add-awareness');
+  const shareRepoButton = document.getElementById('share-repo');
+  const openOptionsButton = document.getElementById('open-options');
+  const clearBtn = document.getElementById('clear-btn');
+
+  if (settingsButton && settingsMenu) {
+    settingsButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = settingsMenu.classList.toggle('open');
+      settingsMenu.setAttribute('aria-hidden', String(!isOpen));
     });
   }
+
+  document.addEventListener('click', (event) => {
+    if (settingsMenu && !settingsMenu.contains(event.target) && settingsButton && !settingsButton.contains(event.target)) {
+      settingsMenu.classList.remove('open');
+      settingsMenu.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  document.querySelectorAll('.setting-toggle').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const key = button.dataset.setting;
+      settings = { ...settings, [key]: !settings[key] };
+      saveSettings(settings);
+      applySettings(settings);
+
+      if (key === 'showBadge') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const [tab] = tabs;
+          if (tab && tab.url) {
+            chrome.runtime.sendMessage({ action: 'refreshBadgeState', url: tab.url });
+          }
+        });
+      }
+
+      if (key === 'autoScanOnOpen' && settings.autoScanOnOpen) {
+        scanPageForLinks();
+      }
+    });
+  });
+
+  if (addAwarenessButton) {
+    addAwarenessButton.addEventListener('click', async () => {
+      if (settingsMenu) {
+        settingsMenu.classList.remove('open');
+        settingsMenu.setAttribute('aria-hidden', 'true');
+      }
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.url) {
+        showToast('no page url');
+        return;
+      }
+
+      let hostname = '';
+      try {
+        hostname = new URL(tab.url).hostname.replace(/^www\./, '').toLowerCase();
+      } catch (error) {
+        hostname = '';
+      }
+
+      if (!hostname) {
+        showToast('no page url');
+        return;
+      }
+
+      const currentSettings = await ExtensionSettings.readSettings();
+      const awareBaseUrls = ExtensionSettings.normalizeAwareHosts(currentSettings.awareBaseUrls || []);
+
+      if (awareBaseUrls.includes(hostname)) {
+        showToast(`${hostname} already in awareness`);
+        return;
+      }
+
+      const nextSettings = {
+        ...currentSettings,
+        awareBaseUrls: Array.from(new Set([...awareBaseUrls, hostname]))
+      };
+
+      ExtensionSettings.writeSettings(nextSettings);
+      showToast(`${hostname} added to awareness`);
+    });
+  }
+
+  if (shareRepoButton) {
+    shareRepoButton.addEventListener('click', async () => {
+      settingsMenu.classList.remove('open');
+
+      const repoUrl = chrome.runtime.getManifest().homepage_url || '';
+
+      if (!repoUrl) {
+        showToast('link copied');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(repoUrl);
+        showToast('link copied');
+      } catch (error) {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = repoUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('link copied');
+      }
+    });
+  }
+
+  if (openOptionsButton) {
+    openOptionsButton.addEventListener('click', () => {
+      settingsMenu?.classList.remove('open');
+      settingsMenu?.setAttribute('aria-hidden', 'true');
+      chrome.runtime.openOptionsPage();
+    });
+  }
+
+  if (settings.autoScanOnOpen) {
+    scanPageForLinks();
+  }
+
+  renderSavedLinks();
 
   // Clear data event handler
   clearBtn.addEventListener('click', () => {
     chrome.storage.local.set({ clickedUrls: [] }, () => {
-      loadAndGroupLinks();
+      renderSavedLinks();
     });
   });
 
   // Execute on popup initialize
-  loadAndGroupLinks();
+  renderSavedLinks();
 });
+
+function bindScannedLinkClick(link) {
+  const anchor = document.createElement('a');
+  anchor.href = link;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  anchor.textContent = link;
+  anchor.addEventListener('click', (event) => {
+    event.preventDefault();
+    recordClickedUrl(link);
+    window.open(link, '_blank', 'noopener,noreferrer');
+    renderSavedLinks();
+  });
+  return anchor;
+}
 
 // TODO: move to background script and trigger on extension icon click or popup open, then send links to popup for display?
 // Call active script to scan page for links when popup is opened
@@ -116,47 +388,17 @@ document.getElementById("scanButton").addEventListener("click", scanPageForLinks
 // listen for messages from the content script and display links in the popup
 function handleMessage(request, sender, sendResponse) {
   if (request.type === 'links') {
-    // test
     const links = request.data;
     const urlList = document.getElementById("urlList");
-    urlList.innerHTML = ""; // Clear previous links
+    urlList.innerHTML = "";
     links.forEach(link => {
       const listItem = document.createElement("li");
-      const anchor = document.createElement("a");
-      anchor.href = link;
-      anchor.target = "_blank";
-      anchor.textContent = link;
-      listItem.appendChild(anchor);
+      listItem.appendChild(bindScannedLinkClick(link));
       urlList.appendChild(listItem);
     });
   }
 }
 chrome.runtime.onMessage.addListener(handleMessage);
 
-
-// test alert function
-async function sayHello() {
-  console.log("Hello from the extension!");
-  let queryOptions = { active: true, lastFocusedWindow: true };
-  let [tab] = await chrome.tabs.query({ active: true });
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: () => {
-      // inject into the actual page context to access DOM and find links, then display in popup:
-      // document.body
-      alert("Hello from the extension!");
-      // notification test instead of alert:
-      // var opt = {
-      //     type: 'basic',
-      //     iconUrl: 'icons/icon64.png',
-      //     title: 'Hello from the extension!',
-      //     contextMessage: 'Test simple notification.'
-      // };
-      //   chrome.notifications.create('notify1', opt, function(id) { console.log("Last error:", chrome.runtime.lastError); });
-
-    }
-  });
-}
-document.getElementById("myButton").addEventListener("click", sayHello);
 
 
