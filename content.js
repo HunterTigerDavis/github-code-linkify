@@ -53,9 +53,25 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+let codeAwareSettings = ExtensionSettings.normalizeSettings({});
+
+const settingsReady = ExtensionSettings.readSettings()
+  .then((settings) => {
+    codeAwareSettings = settings;
+  })
+  .catch((error) => {
+    console.warn('Settings unavailable; retaining the last known settings.', error);
+  });
+
+ExtensionSettings.watchSettings((settings) => {
+  codeAwareSettings = settings;
+});
+
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 async function isCodeAwarePage() {
-  const settings = await ExtensionSettings.readSettings();
+  await settingsReady;
+  const settings = codeAwareSettings;
+
   let isCodeAware = false;
 
   if (settings.enableBaseUrlCheck) {

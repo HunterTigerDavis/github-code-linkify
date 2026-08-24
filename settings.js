@@ -29,6 +29,17 @@ const DEFAULT_SETTINGS = {
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
 
+function getStorageArea() {
+  const storageApi = globalThis.chrome?.storage || globalThis.browser?.storage;
+  const storageArea = storageApi?.local;
+
+  if (!storageArea) {
+    throw new Error('Extension storage is unavailable in this execution context.');
+  }
+
+  return storageArea;
+}
+
 function normalizeAwareHosts(hosts) {
   if (!Array.isArray(hosts)) {
     return [];
@@ -71,7 +82,7 @@ function normalizeSettings(rawSettings = {}) {
 
 function readSettings() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(SETTING_KEYS, (result) => {
+    getStorageArea().get(SETTING_KEYS, (result) => {
       const saved = {};
 
       SETTING_KEYS.forEach((key) => {
@@ -87,7 +98,7 @@ function readSettings() {
 
 function writeSettings(nextSettings) {
   const normalized = normalizeSettings(nextSettings);
-  chrome.storage.local.set(normalized);
+  getStorageArea().set(normalized);
   return normalized;
 }
 
@@ -103,13 +114,20 @@ function watchSettings(onChange) {
       return;
     }
 
-    readSettings().then(onChange);
+    readSettings().then(onChange).catch((error) => {
+      console.error('Unable to read changed extension settings:', error);
+    });
   };
 
-  chrome.storage.onChanged.addListener(listener);
+  const storageApi = globalThis.chrome?.storage || globalThis.browser?.storage;
+  if (!storageApi?.onChanged) {
+    return () => {};
+  }
+
+  storageApi.onChanged.addListener(listener);
 
   return () => {
-    chrome.storage.onChanged.removeListener(listener);
+    storageApi.onChanged.removeListener(listener);
   };
 }
 
