@@ -26,19 +26,15 @@ function applyTheme(settings) {
   document.body.classList.toggle('dark-mode', !!settings.darkMode);
 }
 
-function findSettingDefinition(key) {
-  return settingsApi.SETTINGS_SCHEMA.find((definition) => definition.key === key);
-}
-
 function renderBooleanSettings() {
   const container = document.querySelector('.setting-grid');
   if (!container) return;
 
   container.innerHTML = '';
 
-  settingsApi.SETTINGS_SCHEMA
-    .filter((definition) => definition.type === 'boolean')
-    .forEach((definition) => {
+  Object.entries(settingsApi.SETTINGS_SCHEMA)
+    .filter(([, definition]) => definition.type === 'boolean')
+    .forEach(([key, definition]) => {
       const row = document.createElement('label');
       row.className = 'setting-row';
 
@@ -51,7 +47,7 @@ function renderBooleanSettings() {
 
       const input = document.createElement('input');
       input.type = 'checkbox';
-      input.dataset.setting = definition.key;
+      input.dataset.setting = key;
 
       row.append(text, input);
       container.appendChild(row);
@@ -60,7 +56,7 @@ function renderBooleanSettings() {
 
 function renderCollectionMetadata() {
   document.querySelectorAll('[data-setting-section]').forEach((section) => {
-    const definition = findSettingDefinition(section.dataset.settingSection);
+    const definition = settingsApi.SETTINGS_SCHEMA[section.dataset.settingSection];
     if (!definition) return;
 
     const heading = section.querySelector('h2');

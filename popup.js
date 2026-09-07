@@ -48,13 +48,13 @@ function renderQuickSettings() {
 
   container.innerHTML = '';
 
-  ExtensionSettings.SETTINGS_SCHEMA
-    .filter((definition) => definition.quick && definition.type === 'boolean')
-    .forEach((definition) => {
+  Object.entries(ExtensionSettings.SETTINGS_SCHEMA)
+    .filter(([, definition]) => definition.quick && definition.type === 'boolean')
+    .forEach(([key, definition]) => {
       const button = document.createElement('button');
       button.className = 'menu-item setting-toggle';
       button.type = 'button';
-      button.dataset.setting = definition.key;
+      button.dataset.setting = key;
       button.title = definition.description;
 
       const label = document.createElement('span');

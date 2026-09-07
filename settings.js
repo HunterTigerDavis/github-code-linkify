@@ -17,49 +17,43 @@ const DEFAULT_AWARE_KEYWORDS = [
   '/discussions'
 ];
 
-const SETTINGS_SCHEMA = [
-  {
-    key: 'autoScanOnOpen',
+const SETTINGS_SCHEMA = {
+  autoScanOnOpen: {
     type: 'boolean',
     defaultValue: false,
     label: 'Auto scan on popup open',
     description: 'Scan the active tab for all URLs when the popup opens.',
     quick: true
   },
-  {
-    key: 'darkMode',
+  darkMode: {
     type: 'boolean',
     defaultValue: true,
     label: 'Dark mode',
     description: 'Use the dark color scheme for the extension.',
     quick: true
   },
-  {
-    key: 'showBadge',
+  showBadge: {
     type: 'boolean',
     defaultValue: true,
     label: 'Code-aware badge',
     description: 'Show the action badge for recognized pages.',
     quick: true
   },
-  {
-    key: 'enableBaseUrlCheck',
+  enableBaseUrlCheck: {
     type: 'boolean',
     defaultValue: true,
     label: 'Base URL awareness',
     description: 'Recognize pages by their configured hostname or base URL.',
     quick: true
   },
-  {
-    key: 'enableKeywordCheck',
+  enableKeywordCheck: {
     type: 'boolean',
     defaultValue: true,
     label: 'Keyword awareness',
     description: 'Recognize pages when their URL contains a configured keyword.',
     quick: true
   },
-  {
-    key: 'awareBaseUrls',
+  awareBaseUrls: {
     type: 'list',
     defaultValue: [...DEFAULT_AWARE_BASE_URLS],
     label: 'Aware sites',
@@ -68,8 +62,7 @@ const SETTINGS_SCHEMA = [
     inputPlaceholder: 'example.com or code.example.com',
     addLabel: 'Add site'
   },
-  {
-    key: 'awareKeywords',
+  awareKeywords: {
     type: 'list',
     defaultValue: [...DEFAULT_AWARE_KEYWORDS],
     label: 'Aware keywords',
@@ -78,16 +71,16 @@ const SETTINGS_SCHEMA = [
     inputPlaceholder: '/review/',
     addLabel: 'Add keyword'
   }
-];
+};
 
 const DEFAULT_SETTINGS = Object.fromEntries(
-  SETTINGS_SCHEMA.map(({ key, defaultValue }) => [
+  Object.entries(SETTINGS_SCHEMA).map(([key, { defaultValue }]) => [
     key,
     Array.isArray(defaultValue) ? [...defaultValue] : defaultValue
   ])
 );
 
-const SETTING_KEYS = SETTINGS_SCHEMA.map(({ key }) => key);
+const SETTING_KEYS = Object.keys(SETTINGS_SCHEMA);
 
 function getStorageArea() {
   const storageApi = globalThis.chrome?.storage || globalThis.browser?.storage;
