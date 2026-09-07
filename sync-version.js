@@ -1,7 +1,11 @@
 import fs from 'fs';
+import { execFileSync } from 'child_process';
+import { createInterface } from 'readline/promises';
 import { makeBadge } from 'badge-maker';
 
-// Sync version and description from package.json to manifest.json, and generate a local SVG badge for the extension version
+/**
+ * Sync updated version and description from package.json to manifest.json, and generate a local SVG badge for the extension version
+ */
 
 // 1. Read the version number from package.json
 const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
@@ -38,4 +42,25 @@ try {
 } catch (error) {
     console.error('❌ Failed to generate badge:', error);
     process.exit(1);
+}
+
+if (process.argv.includes('--commit')) {
+    const prompt = createInterface({ input: process.stdin, output: process.stdout });
+    const changeset = (await prompt.question('Brief changeset: ')).trim();
+    prompt.close();
+
+    if (!changeset) {
+        console.error('❌ A brief changeset is required; no commit was created.');
+        process.exit(1);
+    }
+
+    const commitMessage = `v${pkg.version}: ${changeset}`;
+    execFileSync('git', [
+        'add',
+        'manifest.json',
+        'package.json',
+        'icons/version-badge.svg'
+    ], { stdio: 'inherit' });
+    execFileSync('git', ['commit', '-m', commitMessage], { stdio: 'inherit' });
+    console.log(`✅ Committed: ${commitMessage}`);
 }
