@@ -44,16 +44,20 @@ CSS.highlights.set("ext-url-highlight", urlHighlight);[1, 3]
 
 // Inject a tiny stylesheet dynamically to color only our highlighted ranges
 const style = document.createElement('style');
-style.textContent = `
-  ::highlight(ext-url-highlight) {
-    color: #ff6b00 !important;
-    text-decoration: underline !important;
-    font-weight: bold !important;
-  }
-`;
 document.head.appendChild(style);
 
+function applyHighlightColor(color) {
+  style.textContent = `
+    ::highlight(ext-url-highlight) {
+      color: ${color} !important;
+      text-decoration: underline !important;
+      font-weight: bold !important;
+    }
+  `;
+}
+
 let codeAwareSettings = ExtensionSettings.normalizeSettings({});
+applyHighlightColor(codeAwareSettings.highlightColor);
 let awarenessActive = false;
 let awarenessListenersAttached = false;
 let mouseMoveFrame = 0;
@@ -66,6 +70,7 @@ let highlightedContainer;
 const settingsReady = ExtensionSettings.readSettings()
   .then((settings) => {
     codeAwareSettings = settings;
+    applyHighlightColor(settings.highlightColor);
   })
   .catch((error) => {
     console.warn('Settings unavailable; retaining the last known settings.', error);
@@ -73,6 +78,7 @@ const settingsReady = ExtensionSettings.readSettings()
 
 ExtensionSettings.watchSettings((settings) => {
   codeAwareSettings = settings;
+  applyHighlightColor(settings.highlightColor);
   refreshPageAwareness();
 });
 

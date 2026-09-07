@@ -22,6 +22,16 @@ function showStatus(message) {
   }, 1800);
 }
 
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.classList.add('visible');
+  clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = setTimeout(() => toast.classList.remove('visible'), 1800);
+}
+
 function applyTheme(settings) {
   document.body.classList.toggle('dark-mode', settingsApi.shouldUseDarkMode(settings.darkMode));
 }
@@ -33,7 +43,7 @@ function renderBooleanSettings() {
   container.innerHTML = '';
 
   Object.entries(settingsApi.SETTINGS_SCHEMA)
-    .filter(([, definition]) => definition.type === 'boolean' || definition.type === 'choice')
+    .filter(([, definition]) => ['boolean', 'choice', 'color'].includes(definition.type))
     .forEach(([key, definition]) => {
       const row = document.createElement('label');
       row.className = 'setting-row';
@@ -50,6 +60,8 @@ function renderBooleanSettings() {
         : document.createElement('input');
       if (definition.type === 'boolean') {
         input.type = 'checkbox';
+      } else if (definition.type === 'color') {
+        input.type = 'color';
       } else {
         definition.options.forEach((option) => {
           const choice = document.createElement('option');
@@ -61,6 +73,16 @@ function renderBooleanSettings() {
       input.dataset.setting = key;
 
       row.append(text, input);
+
+      if (definition.resetLabel) {
+        const resetButton = document.createElement('button');
+        resetButton.type = 'button';
+        resetButton.className = 'setting-reset-button';
+        resetButton.dataset.settingReset = key;
+        resetButton.textContent = definition.resetLabel;
+        row.appendChild(resetButton);
+      }
+
       container.appendChild(row);
     });
 }
@@ -89,6 +111,8 @@ function renderToggles(settings) {
     const key = input.dataset.setting;
     const definition = settingsApi.SETTINGS_SCHEMA[key];
     if (definition.type === 'choice') {
+      input.value = settings[key];
+    } else if (definition.type === 'color') {
       input.value = settings[key];
     } else {
       input.checked = !!settings[key];
@@ -194,7 +218,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('[data-setting]').forEach((input) => {
     input.addEventListener('change', () => {
       const definition = settingsApi.SETTINGS_SCHEMA[input.dataset.setting];
-      const value = definition.type === 'choice' ? input.value : input.checked;
+      const value = definition.type === 'choice' || definition.type === 'color'
+        ? input.value
+        : input.checked;
       persistSettings({ ...currentSettings, [input.dataset.setting]: value });
     });
   });
@@ -203,6 +229,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('keyword-form').addEventListener('submit', addKeyword);
   document.getElementById('clear-sites').addEventListener('click', clearSites);
   document.getElementById('clear-keywords').addEventListener('click', clearKeywords);
+  document.querySelectorAll('[data-setting-reset]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const key = button.dataset.settingReset;
+      persistSettings({ ...currentSettings, [key]: settingsApi.DEFAULT_SETTINGS[key] }, 'Highlight color reset');
+    });
+  });
+  document.getElementById('share-repo').addEventListener('click', async () => {
+    const copied = await settingsApi.copyRepositoryUrl();
+    showToast(copied ? 'Link copied' : 'Copy failed');
+  });
   document.getElementById('reset-settings').addEventListener('click', () => {
     persistSettings({ ...settingsApi.DEFAULT_SETTINGS, awareBaseUrls: [...settingsApi.DEFAULT_AWARE_BASE_URLS], awareKeywords: [...settingsApi.DEFAULT_AWARE_KEYWORDS] }, 'Settings reset');
   });

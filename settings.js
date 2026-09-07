@@ -28,7 +28,7 @@ const SETTINGS_SCHEMA = {
   darkMode: {
     type: 'choice',
     defaultValue: 'system',
-    label: 'Color theme',
+    label: 'Extension theme',
     description: 'Choose light, dark, or the browser color preference.',
     options: [
       { value: 'light', label: 'Light' },
@@ -57,6 +57,14 @@ const SETTINGS_SCHEMA = {
     label: 'Keyword awareness',
     description: 'Recognize pages when their URL contains a configured keyword.',
     quick: true
+  },
+  highlightColor: {
+    type: 'color',
+    defaultValue: '#ff6b00',
+    label: 'Highlight color',
+    description: 'Choose the color used to highlight detected URLs.',
+    quick: true,
+    resetLabel: 'Reset'
   },
   awareBaseUrls: {
     type: 'list',
@@ -124,6 +132,12 @@ function normalizeBoolean(value, fallback) {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+function normalizeColor(value, fallback = DEFAULT_SETTINGS.highlightColor) {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+    ? value.toLowerCase()
+    : fallback;
+}
+
 function normalizeThemeMode(value, fallback = DEFAULT_SETTINGS.darkMode) {
   if (value === 'light' || value === 'dark' || value === 'system') {
     return value;
@@ -147,6 +161,18 @@ function shouldUseDarkMode(themeMode) {
   return normalizedMode === 'dark' || (normalizedMode === 'system' && getSystemDarkMode());
 }
 
+async function copyRepositoryUrl() {
+  const repositoryUrl = globalThis.chrome?.runtime?.getManifest?.().homepage_url || '';
+  if (!repositoryUrl || !globalThis.navigator?.clipboard?.writeText) return false;
+
+  try {
+    await globalThis.navigator.clipboard.writeText(repositoryUrl);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function normalizeSettings(rawSettings = {}) {
   const source = rawSettings && typeof rawSettings === 'object' ? rawSettings : {};
 
@@ -156,6 +182,7 @@ function normalizeSettings(rawSettings = {}) {
     showBadge: normalizeBoolean(source.showBadge, DEFAULT_SETTINGS.showBadge),
     enableBaseUrlCheck: normalizeBoolean(source.enableBaseUrlCheck, DEFAULT_SETTINGS.enableBaseUrlCheck),
     enableKeywordCheck: normalizeBoolean(source.enableKeywordCheck, DEFAULT_SETTINGS.enableKeywordCheck),
+    highlightColor: normalizeColor(source.highlightColor),
     awareBaseUrls: normalizeAwareHosts(source.awareBaseUrls ?? DEFAULT_AWARE_BASE_URLS),
     awareKeywords: normalizeAwareKeywords(source.awareKeywords ?? DEFAULT_AWARE_KEYWORDS)
   };
@@ -181,6 +208,12 @@ function writeSettings(nextSettings) {
   const normalized = normalizeSettings(nextSettings);
   getStorageArea().set(normalized);
   return normalized;
+}
+
+function writeSetting(key, value) {
+  const normalizedValue = normalizeSettings({ [key]: value })[key];
+  getStorageArea().set({ [key]: normalizedValue });
+  return normalizedValue;
 }
 
 function watchSettings(onChange) {
@@ -221,12 +254,15 @@ globalThis.ExtensionSettings = {
   normalizeAwareHosts,
   normalizeAwareKeywords,
   normalizeBoolean,
+  normalizeColor,
   normalizeThemeMode,
   getSystemDarkMode,
   shouldUseDarkMode,
+  copyRepositoryUrl,
   normalizeSettings,
   readSettings,
   writeSettings,
+  writeSetting,
   watchSettings
 };
 
