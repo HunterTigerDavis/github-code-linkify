@@ -20,26 +20,23 @@ function populateExtensionMeta() {
   });
 }
 
-function getSystemDarkMode() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
 async function loadSettings() {
   const settings = await ExtensionSettings.readSettings();
-  const nextSettings = {
-    ...settings,
-    darkMode: typeof settings.darkMode === 'boolean' ? settings.darkMode : getSystemDarkMode()
-  };
-
-  if (JSON.stringify(settings) !== JSON.stringify(nextSettings)) {
-    ExtensionSettings.writeSettings(nextSettings);
-  }
-
-  return nextSettings;
+  return settings;
 }
 
 function saveSettings(settings) {
   ExtensionSettings.writeSettings(settings);
+}
+
+function getNextSettingValue(definition, currentValue) {
+  if (!definition.options) {
+    return !currentValue;
+  }
+
+  const currentIndex = definition.options.findIndex((option) => option.value === currentValue);
+  const nextIndex = (currentIndex + 1) % definition.options.length;
+  return definition.options[nextIndex].value;
 }
 
 function renderQuickSettings() {
@@ -49,7 +46,7 @@ function renderQuickSettings() {
   container.innerHTML = '';
 
   Object.entries(ExtensionSettings.SETTINGS_SCHEMA)
-    .filter(([, definition]) => definition.quick && definition.type === 'boolean')
+    .filter(([, definition]) => definition.quick)
     .forEach(([key, definition]) => {
       const button = document.createElement('button');
       button.className = 'menu-item setting-toggle';
@@ -69,15 +66,18 @@ function renderQuickSettings() {
 }
 
 function applySettings(settings) {
-  document.body.classList.toggle('dark-mode', !!settings.darkMode);
+  document.body.classList.toggle('dark-mode', ExtensionSettings.shouldUseDarkMode(settings.darkMode));
 
   document.querySelectorAll('.setting-toggle').forEach((button) => {
     const key = button.dataset.setting;
-    const state = !!settings[key];
+    const state = settings[key];
     const toggle = button.querySelector('.toggle-state');
 
     if (toggle) {
-      toggle.textContent = state ? 'On' : 'Off';
+      const definition = ExtensionSettings.SETTINGS_SCHEMA[key];
+      toggle.textContent = definition.options
+        ? definition.options.find((option) => option.value === state)?.label || state
+        : state ? 'On' : 'Off';
     }
   });
 }
@@ -257,7 +257,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       const key = button.dataset.setting;
-      settings = { ...settings, [key]: !settings[key] };
+      const definition = ExtensionSettings.SETTINGS_SCHEMA[key];
+      settings = {
+        ...settings,
+        [key]: getNextSettingValue(definition, settings[key])
+      };
       saveSettings(settings);
       applySettings(settings);
 

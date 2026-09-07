@@ -26,10 +26,15 @@ const SETTINGS_SCHEMA = {
     quick: true
   },
   darkMode: {
-    type: 'boolean',
-    defaultValue: true,
-    label: 'Dark mode',
-    description: 'Use the dark color scheme for the extension.',
+    type: 'choice',
+    defaultValue: 'system',
+    label: 'Color theme',
+    description: 'Choose light, dark, or the browser color preference.',
+    options: [
+      { value: 'light', label: 'Light' },
+      { value: 'dark', label: 'Dark' },
+      { value: 'system', label: 'System' }
+    ],
     quick: true
   },
   showBadge: {
@@ -119,12 +124,35 @@ function normalizeBoolean(value, fallback) {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+function normalizeThemeMode(value, fallback = DEFAULT_SETTINGS.darkMode) {
+  if (value === 'light' || value === 'dark' || value === 'system') {
+    return value;
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'dark' : 'light';
+  }
+
+  return fallback;
+}
+
+function getSystemDarkMode() {
+  return typeof globalThis.matchMedia === 'function'
+    ? globalThis.matchMedia('(prefers-color-scheme: dark)').matches
+    : true;
+}
+
+function shouldUseDarkMode(themeMode) {
+  const normalizedMode = normalizeThemeMode(themeMode);
+  return normalizedMode === 'dark' || (normalizedMode === 'system' && getSystemDarkMode());
+}
+
 function normalizeSettings(rawSettings = {}) {
   const source = rawSettings && typeof rawSettings === 'object' ? rawSettings : {};
 
   return {
     autoScanOnOpen: normalizeBoolean(source.autoScanOnOpen, DEFAULT_SETTINGS.autoScanOnOpen),
-    darkMode: normalizeBoolean(source.darkMode, DEFAULT_SETTINGS.darkMode),
+    darkMode: normalizeThemeMode(source.darkMode),
     showBadge: normalizeBoolean(source.showBadge, DEFAULT_SETTINGS.showBadge),
     enableBaseUrlCheck: normalizeBoolean(source.enableBaseUrlCheck, DEFAULT_SETTINGS.enableBaseUrlCheck),
     enableKeywordCheck: normalizeBoolean(source.enableKeywordCheck, DEFAULT_SETTINGS.enableKeywordCheck),
@@ -193,6 +221,9 @@ globalThis.ExtensionSettings = {
   normalizeAwareHosts,
   normalizeAwareKeywords,
   normalizeBoolean,
+  normalizeThemeMode,
+  getSystemDarkMode,
+  shouldUseDarkMode,
   normalizeSettings,
   readSettings,
   writeSettings,

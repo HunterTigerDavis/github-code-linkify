@@ -23,7 +23,7 @@ function showStatus(message) {
 }
 
 function applyTheme(settings) {
-  document.body.classList.toggle('dark-mode', !!settings.darkMode);
+  document.body.classList.toggle('dark-mode', settingsApi.shouldUseDarkMode(settings.darkMode));
 }
 
 function renderBooleanSettings() {
@@ -33,7 +33,7 @@ function renderBooleanSettings() {
   container.innerHTML = '';
 
   Object.entries(settingsApi.SETTINGS_SCHEMA)
-    .filter(([, definition]) => definition.type === 'boolean')
+    .filter(([, definition]) => definition.type === 'boolean' || definition.type === 'choice')
     .forEach(([key, definition]) => {
       const row = document.createElement('label');
       row.className = 'setting-row';
@@ -45,8 +45,19 @@ function renderBooleanSettings() {
       description.textContent = definition.description;
       text.append(label, description);
 
-      const input = document.createElement('input');
-      input.type = 'checkbox';
+      const input = definition.type === 'choice'
+        ? document.createElement('select')
+        : document.createElement('input');
+      if (definition.type === 'boolean') {
+        input.type = 'checkbox';
+      } else {
+        definition.options.forEach((option) => {
+          const choice = document.createElement('option');
+          choice.value = option.value;
+          choice.textContent = option.label;
+          input.appendChild(choice);
+        });
+      }
       input.dataset.setting = key;
 
       row.append(text, input);
@@ -75,7 +86,13 @@ function renderCollectionMetadata() {
 
 function renderToggles(settings) {
   document.querySelectorAll('[data-setting]').forEach((input) => {
-    input.checked = !!settings[input.dataset.setting];
+    const key = input.dataset.setting;
+    const definition = settingsApi.SETTINGS_SCHEMA[key];
+    if (definition.type === 'choice') {
+      input.value = settings[key];
+    } else {
+      input.checked = !!settings[key];
+    }
   });
 }
 
@@ -176,7 +193,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelectorAll('[data-setting]').forEach((input) => {
     input.addEventListener('change', () => {
-      persistSettings({ ...currentSettings, [input.dataset.setting]: input.checked });
+      const definition = settingsApi.SETTINGS_SCHEMA[input.dataset.setting];
+      const value = definition.type === 'choice' ? input.value : input.checked;
+      persistSettings({ ...currentSettings, [input.dataset.setting]: value });
     });
   });
 

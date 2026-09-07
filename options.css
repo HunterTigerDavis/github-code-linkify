@@ -177,11 +177,24 @@ h1 {
   line-height: 1.4;
 }
 
-.setting-row input {
+.setting-row input,
+.setting-row select {
   flex: 0 0 auto;
+}
+
+.setting-row input {
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
+}
+
+.setting-row select {
+  min-width: 92px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
 }
 
 .add-form {
