@@ -17,17 +17,77 @@ const DEFAULT_AWARE_KEYWORDS = [
   '/discussions'
 ];
 
-const DEFAULT_SETTINGS = {
-  autoScanOnOpen: false,
-  darkMode: true,
-  showBadge: true,
-  enableBaseUrlCheck: true,
-  enableKeywordCheck: true,
-  awareBaseUrls: [...DEFAULT_AWARE_BASE_URLS],
-  awareKeywords: [...DEFAULT_AWARE_KEYWORDS]
-};
+const SETTINGS_SCHEMA = [
+  {
+    key: 'autoScanOnOpen',
+    type: 'boolean',
+    defaultValue: false,
+    label: 'Auto scan on popup open',
+    description: 'Scan the active tab for all URLs when the popup opens.',
+    quick: true
+  },
+  {
+    key: 'darkMode',
+    type: 'boolean',
+    defaultValue: true,
+    label: 'Dark mode',
+    description: 'Use the dark color scheme for the extension.',
+    quick: true
+  },
+  {
+    key: 'showBadge',
+    type: 'boolean',
+    defaultValue: true,
+    label: 'Code-aware badge',
+    description: 'Show the action badge for recognized pages.',
+    quick: true
+  },
+  {
+    key: 'enableBaseUrlCheck',
+    type: 'boolean',
+    defaultValue: true,
+    label: 'Base URL awareness',
+    description: 'Recognize pages by their configured hostname or base URL.',
+    quick: true
+  },
+  {
+    key: 'enableKeywordCheck',
+    type: 'boolean',
+    defaultValue: true,
+    label: 'Keyword awareness',
+    description: 'Recognize pages when their URL contains a configured keyword.',
+    quick: true
+  },
+  {
+    key: 'awareBaseUrls',
+    type: 'list',
+    defaultValue: [...DEFAULT_AWARE_BASE_URLS],
+    label: 'Aware sites',
+    description: 'Add hostnames or base URL fragments that should always be treated as code-aware.',
+    inputLabel: 'Site hostname or base URL',
+    inputPlaceholder: 'example.com or code.example.com',
+    addLabel: 'Add site'
+  },
+  {
+    key: 'awareKeywords',
+    type: 'list',
+    defaultValue: [...DEFAULT_AWARE_KEYWORDS],
+    label: 'Aware keywords',
+    description: 'Add URL fragments such as /pull/ or /review/ to recognize matching pages.',
+    inputLabel: 'URL keyword',
+    inputPlaceholder: '/review/',
+    addLabel: 'Add keyword'
+  }
+];
 
-const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
+const DEFAULT_SETTINGS = Object.fromEntries(
+  SETTINGS_SCHEMA.map(({ key, defaultValue }) => [
+    key,
+    Array.isArray(defaultValue) ? [...defaultValue] : defaultValue
+  ])
+);
+
+const SETTING_KEYS = SETTINGS_SCHEMA.map(({ key }) => key);
 
 function getStorageArea() {
   const storageApi = globalThis.chrome?.storage || globalThis.browser?.storage;
@@ -132,6 +192,7 @@ function watchSettings(onChange) {
 }
 
 globalThis.ExtensionSettings = {
+  SETTINGS_SCHEMA,
   SETTING_KEYS,
   DEFAULT_SETTINGS,
   DEFAULT_AWARE_BASE_URLS,

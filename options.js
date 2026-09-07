@@ -26,6 +26,57 @@ function applyTheme(settings) {
   document.body.classList.toggle('dark-mode', !!settings.darkMode);
 }
 
+function findSettingDefinition(key) {
+  return settingsApi.SETTINGS_SCHEMA.find((definition) => definition.key === key);
+}
+
+function renderBooleanSettings() {
+  const container = document.querySelector('.setting-grid');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  settingsApi.SETTINGS_SCHEMA
+    .filter((definition) => definition.type === 'boolean')
+    .forEach((definition) => {
+      const row = document.createElement('label');
+      row.className = 'setting-row';
+
+      const text = document.createElement('span');
+      const label = document.createElement('strong');
+      label.textContent = definition.label;
+      const description = document.createElement('small');
+      description.textContent = definition.description;
+      text.append(label, description);
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.setting = definition.key;
+
+      row.append(text, input);
+      container.appendChild(row);
+    });
+}
+
+function renderCollectionMetadata() {
+  document.querySelectorAll('[data-setting-section]').forEach((section) => {
+    const definition = findSettingDefinition(section.dataset.settingSection);
+    if (!definition) return;
+
+    const heading = section.querySelector('h2');
+    const description = section.querySelector('.section-heading p');
+    const input = section.querySelector('input');
+    const inputLabel = section.querySelector('label.sr-only');
+    const addButton = section.querySelector('form button[type="submit"]');
+
+    if (heading) heading.textContent = definition.label;
+    if (description) description.textContent = definition.description;
+    if (input) input.placeholder = definition.inputPlaceholder;
+    if (inputLabel) inputLabel.textContent = definition.inputLabel;
+    if (addButton) addButton.textContent = definition.addLabel;
+  });
+}
+
 function renderToggles(settings) {
   document.querySelectorAll('[data-setting]').forEach((input) => {
     input.checked = !!settings[input.dataset.setting];
@@ -123,6 +174,8 @@ function clearKeywords() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   populateOptionsMeta();
+  renderBooleanSettings();
+  renderCollectionMetadata();
   renderSettings(await settingsApi.readSettings());
 
   document.querySelectorAll('[data-setting]').forEach((input) => {

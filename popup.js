@@ -42,6 +42,32 @@ function saveSettings(settings) {
   ExtensionSettings.writeSettings(settings);
 }
 
+function renderQuickSettings() {
+  const container = document.getElementById('quick-settings-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  ExtensionSettings.SETTINGS_SCHEMA
+    .filter((definition) => definition.quick && definition.type === 'boolean')
+    .forEach((definition) => {
+      const button = document.createElement('button');
+      button.className = 'menu-item setting-toggle';
+      button.type = 'button';
+      button.dataset.setting = definition.key;
+      button.title = definition.description;
+
+      const label = document.createElement('span');
+      label.textContent = definition.label;
+
+      const state = document.createElement('span');
+      state.className = 'toggle-state';
+
+      button.append(label, state);
+      container.appendChild(button);
+    });
+}
+
 function applySettings(settings) {
   document.body.classList.toggle('dark-mode', !!settings.darkMode);
 
@@ -202,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   populateExtensionMeta();
 
   let settings = await loadSettings();
+  renderQuickSettings();
   applySettings(settings);
 
   const settingsButton = document.getElementById('settings-button');
