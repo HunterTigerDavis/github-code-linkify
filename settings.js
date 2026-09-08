@@ -106,6 +106,34 @@ function getStorageArea() {
   return storageArea;
 }
 
+function getStoredSettings() {
+  return new Promise((resolve, reject) => {
+    getStorageArea().get(SETTING_KEYS, (result) => {
+      const error = globalThis.chrome?.runtime?.lastError;
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+
+      resolve(result);
+    });
+  });
+}
+
+function setStoredSettings(settings) {
+  return new Promise((resolve, reject) => {
+    getStorageArea().set(settings, () => {
+      const error = globalThis.chrome?.runtime?.lastError;
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
 function normalizeAwareHosts(hosts) {
   if (!Array.isArray(hosts)) {
     return [];
@@ -188,32 +216,14 @@ function normalizeSettings(rawSettings = {}) {
   };
 }
 
-function readSettings() {
-  return new Promise((resolve) => {
-    getStorageArea().get(SETTING_KEYS, (result) => {
-      const saved = {};
-
-      SETTING_KEYS.forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(result, key)) {
-          saved[key] = result[key];
-        }
-      });
-
-      resolve(normalizeSettings(saved));
-    });
-  });
+async function readSettings() {
+  return normalizeSettings(await getStoredSettings());
 }
 
-function writeSettings(nextSettings) {
+async function writeSettings(nextSettings) {
   const normalized = normalizeSettings(nextSettings);
-  getStorageArea().set(normalized);
+  await setStoredSettings(normalized);
   return normalized;
-}
-
-function writeSetting(key, value) {
-  const normalizedValue = normalizeSettings({ [key]: value })[key];
-  getStorageArea().set({ [key]: normalizedValue });
-  return normalizedValue;
 }
 
 function watchSettings(onChange) {
@@ -262,7 +272,6 @@ globalThis.ExtensionSettings = {
   normalizeSettings,
   readSettings,
   writeSettings,
-  writeSetting,
   watchSettings
 };
 

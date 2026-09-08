@@ -20,16 +20,7 @@ function populateExtensionMeta() {
   });
 }
 
-async function loadSettings() {
-  const settings = await ExtensionSettings.readSettings();
-  return settings;
-}
-
-let currentSettings = ExtensionSettings.normalizeSettings({});
-
-function saveSettings(settings) {
-  return ExtensionSettings.writeSettings(settings);
-}
+let currentSettings;
 
 function getNextSettingValue(definition, currentValue) {
   if (!definition.options) {
@@ -65,11 +56,13 @@ function renderQuickSettings() {
         row.addEventListener('click', (event) => {
           if (event.target !== input) input.click();
         });
-        const updateColor = () => {
-          const color = ExtensionSettings.normalizeColor(input.value);
-          if (currentSettings[key] === color) return;
-          ExtensionSettings.writeSetting(key, color);
-          currentSettings = { ...currentSettings, [key]: color };
+        const updateColor = async () => {
+          if (currentSettings[key] === input.value) return;
+          const nextSettings = {
+            ...currentSettings,
+            [key]: input.value
+          };
+          currentSettings = await ExtensionSettings.writeSettings(nextSettings);
           applySettings(currentSettings);
         };
         input.addEventListener('input', updateColor);
@@ -264,7 +257,7 @@ function recordClickedUrl(url) {
 document.addEventListener('DOMContentLoaded', async () => {
   populateExtensionMeta();
 
-  currentSettings = await loadSettings();
+  currentSettings = await ExtensionSettings.readSettings();
   renderQuickSettings();
   applySettings(currentSettings);
 
@@ -291,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.querySelectorAll('.setting-toggle').forEach((button) => {
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', async (event) => {
       event.stopPropagation();
       const key = button.dataset.setting;
       const definition = ExtensionSettings.SETTINGS_SCHEMA[key];
@@ -299,7 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ...currentSettings,
         [key]: getNextSettingValue(definition, currentSettings[key])
       };
-      currentSettings = saveSettings(currentSettings);
+      currentSettings = await ExtensionSettings.writeSettings(currentSettings);
       applySettings(currentSettings);
 
       if (key === 'showBadge') {
@@ -342,8 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const currentSettings = await ExtensionSettings.readSettings();
-      const awareBaseUrls = ExtensionSettings.normalizeAwareHosts(currentSettings.awareBaseUrls || []);
+      const awareBaseUrls = currentSettings.awareBaseUrls;
 
       if (awareBaseUrls.includes(hostname)) {
         showToast(`${hostname} already in awareness`);
@@ -355,7 +347,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         awareBaseUrls: Array.from(new Set([...awareBaseUrls, hostname]))
       };
 
-      ExtensionSettings.writeSettings(nextSettings);
+      currentSettings = await ExtensionSettings.writeSettings(nextSettings);
+      applySettings(currentSettings);
       showToast(`${hostname} added to awareness`);
     });
   }

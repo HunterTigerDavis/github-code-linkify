@@ -154,9 +154,16 @@ function renderSettings(settings) {
 }
 
 function persistSettings(nextSettings, message = 'Saved') {
-  currentSettings = settingsApi.writeSettings(nextSettings);
-  renderSettings(currentSettings);
-  showStatus(message);
+  settingsApi.writeSettings(nextSettings)
+    .then((savedSettings) => {
+      currentSettings = savedSettings;
+      renderSettings(currentSettings);
+      showStatus(message);
+    })
+    .catch((error) => {
+      console.error('Unable to save extension settings:', error);
+      showStatus('Unable to save settings');
+    });
 }
 
 function addSite(event) {
