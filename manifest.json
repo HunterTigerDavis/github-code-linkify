@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Github Code Linkify",
   "author": "Hunter Tiger Davis",
-  "version": "0.7.8",
+  "version": "0.8.0",
   "homepage_url": "https://github.com/HunterTigerDavis/github-code-linkify",
   "description": "A Chrome extension that enhances GitHub browsing by providing URL highlighting and click functionality directly on code lines in pull requests, commits, and code views. Click on any link to open it in a new tab, and view your history in the popup!",
   "action": {
