@@ -108,6 +108,7 @@ function setAwarenessListeners(active) {
 
   if (active) {
     document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseleave', handleDocumentMouseLeave);
     document.addEventListener('click', handleDocumentClick, true);
   } else {
     if (mouseMoveFrame) {
@@ -115,6 +116,7 @@ function setAwarenessListeners(active) {
       mouseMoveFrame = 0;
     }
     document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseleave', handleDocumentMouseLeave);
     document.removeEventListener('click', handleDocumentClick, true);
     clearUrlHighlight();
   }
@@ -170,6 +172,9 @@ function highlightUrlsInTextNodes(root = document.body) {
 
 // Global function to find the exact text node and character index under the cursor
 function getCharIndexUnderMouse(event) {
+  const pointerElement = document.elementFromPoint(event.clientX, event.clientY);
+  if (!pointerElement) return null;
+
   // Use modern caretPositionFromPoint or caretRangeFromPoint to pinpoint the text node [4]
   let range;
   if (document.caretRangeFromPoint) {
@@ -189,9 +194,10 @@ function getCharIndexUnderMouse(event) {
   const parentElement = range.startContainer.parentElement;
   if (!parentElement) return null;
 
-  // Extended selectors to support README paragraphs, code blocks, markdown content, and various GitHub layouts
+  // Extended selectors to support README paragraphs, code blocks, markdown content, and various GitHub layouts for code views & pull requests
   const container = parentElement.closest('td, span, p, li, div, .blob-code-inner, .react-file-line-composition, code, pre');
   if (!container) return null;
+  if (!container.contains(pointerElement)) return null;
 
   return {
     textNode: range.startContainer,
@@ -206,6 +212,12 @@ function handleMouseMove(event) {
   if (!mouseMoveFrame) {
     mouseMoveFrame = requestAnimationFrame(processMouseMove);
   }
+}
+
+function handleDocumentMouseLeave() {
+  latestMouseEvent = undefined;
+  lastPointerKey = '';
+  clearUrlHighlight();
 }
 
 function processMouseMove() {
@@ -236,7 +248,7 @@ function processMouseMove() {
     const matchEnd = matchStart + match[0].length;
 
     // Is the user's cursor character index mathematically inside the URL string boundary?
-    if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
+    if (pointInfo.offset >= matchStart && pointInfo.offset < matchEnd) {
       const urlKey = `${matchStart}:${matchEnd}`;
       if (textNode === highlightedTextNode && urlKey === highlightedUrlKey) return;
 
@@ -282,7 +294,7 @@ async function handleDocumentClick(event) {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
 
-    if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
+    if (pointInfo.offset >= matchStart && pointInfo.offset < matchEnd) {
       console.debug('Click - URL matches:', match[0]);
       const destination = normalizeUrlDestination(match[0]);
 
