@@ -1,15 +1,15 @@
 {
   "name": "github-code-linkify",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A Chrome extension that enhances GitHub browsing by providing URL highlighting and click functionality directly on code lines in pull requests, commits, and code views. Click on any link to open it in a new tab, and view your history in the popup!",
   "author": "Hunter Tiger Davis",
   "main": "background.js",
   "type": "module",
   "scripts": {
     "sync": "node sync-version.js && git add manifest.json package.json icons/version-badge.svg",
-    "patch": "pnpm version patch --no-git-tag-version && pnpm run sync",
-    "minor": "pnpm version minor --no-git-tag-version && pnpm run sync",
-    "major": "pnpm version major --no-git-tag-version && pnpm run sync"
+    "patch": "pnpm version patch --no-git-tag-version && node sync-version.js --commit",
+    "minor": "pnpm version minor --no-git-tag-version && node sync-version.js --commit",
+    "major": "pnpm version major --no-git-tag-version && node sync-version.js --commit"
   },
   "keywords": [
     "browser-extension",

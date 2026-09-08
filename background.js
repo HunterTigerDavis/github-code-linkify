@@ -64,6 +64,8 @@ function updateTabBadge(tabId, urlString) {
     } catch (error) {
       chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
     }
+  }).catch(() => {
+    chrome.action.setBadgeText({ text: '', tabId }).catch(() => { });
   });
 }
 

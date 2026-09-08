@@ -24,83 +24,51 @@
             <img src="icons/icon64.png" alt="Extension icon" width="56" height="56">
         </header>
 
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
         <section class="settings-section" aria-labelledby="behavior-heading">
             <div class="section-heading">
                 <h2 id="behavior-heading">Behavior</h2>
                 <p>Choose how the popup and page awareness behave.</p>
             </div>
             <div class="setting-grid">
-                <label class="setting-row">
-                    <span>
-                        <strong>Auto scan on popup open</strong>
-                        <small>Scan the active tab for all URLs when the popup opens.</small>
-                    </span>
-                    <input type="checkbox" data-setting="autoScanOnOpen">
-                </label>
-                <label class="setting-row">
-                    <span>
-                        <strong>Dark mode</strong>
-                        <small>Use the dark color scheme for the extension.</small>
-                    </span>
-                    <input type="checkbox" data-setting="darkMode">
-                </label>
-                <label class="setting-row">
-                    <span>
-                        <strong>Code-aware badge</strong>
-                        <small>Show the action badge for recognized pages.</small>
-                    </span>
-                    <input type="checkbox" data-setting="showBadge">
-                </label>
-                <label class="setting-row">
-                    <span>
-                        <strong>Base URL awareness</strong>
-                        <small>Recognize pages by their configured hostname or base URL.</small>
-                    </span>
-                    <input type="checkbox" data-setting="enableBaseUrlCheck">
-                </label>
-                <label class="setting-row">
-                    <span>
-                        <strong>Keyword awareness</strong>
-                        <small>Recognize pages when their URL contains a configured keyword.</small>
-                    </span>
-                    <input type="checkbox" data-setting="enableKeywordCheck">
-                </label>
             </div>
         </section>
 
-        <section class="settings-section" aria-labelledby="sites-heading">
+        <section class="settings-section" aria-labelledby="sites-heading" data-setting-section="awareBaseUrls">
             <div class="section-heading section-heading-row">
                 <div>
-                    <h2 id="sites-heading">Aware sites</h2>
-                    <p>Add hostnames or base URL fragments that should always be treated as code-aware.</p>
+                    <h2 id="sites-heading"></h2>
+                    <p></p>
                 </div>
                 <button class="clear-list-button" id="clear-sites" type="button">Clear all</button>
             </div>
             <form class="add-form" id="site-form">
-                <label class="sr-only" for="site-input">Site hostname or base URL</label>
-                <input id="site-input" type="text" placeholder="example.com or code.example.com" autocomplete="off">
-                <button type="submit">Add site</button>
+                <label class="sr-only" for="site-input"></label>
+                <input id="site-input" type="text" autocomplete="off">
+                <button type="submit"></button>
             </form>
             <ul class="active-list" id="site-list" aria-live="polite"></ul>
         </section>
 
-        <section class="settings-section" aria-labelledby="keywords-heading">
+        <section class="settings-section" aria-labelledby="keywords-heading" data-setting-section="awareKeywords">
             <div class="section-heading section-heading-row">
                 <div>
-                    <h2 id="keywords-heading">Aware keywords</h2>
-                    <p>Add URL fragments such as <code>/pull/</code> or <code>/review/</code> to recognize matching pages.</p>
+                    <h2 id="keywords-heading"></h2>
+                    <p></p>
                 </div>
                 <button class="clear-list-button" id="clear-keywords" type="button">Clear all</button>
             </div>
             <form class="add-form" id="keyword-form">
-                <label class="sr-only" for="keyword-input">URL keyword</label>
-                <input id="keyword-input" type="text" placeholder="/review/" autocomplete="off">
-                <button type="submit">Add keyword</button>
+                <label class="sr-only" for="keyword-input"></label>
+                <input id="keyword-input" type="text" autocomplete="off">
+                <button type="submit"></button>
             </form>
             <ul class="active-list" id="keyword-list" aria-live="polite"></ul>
         </section>
 
         <footer class="options-footer">
+            <button class="share-button" id="share-repo" type="button">Share repo</button>
             <button class="reset-button" id="reset-settings" type="button">Reset all settings to default</button>
             <span id="save-status" role="status" aria-live="polite"></span>
         </footer>

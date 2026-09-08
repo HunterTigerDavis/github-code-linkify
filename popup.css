@@ -9,7 +9,8 @@
   --button-hover: #d0d7de;
   --accent: #ff6b00;
   --shadow: rgba(31, 35, 40, 0.12);
-  --toast-bg: rgba(31, 35, 40, 0.92);
+  --toast-bg: #24292f;
+  --toast-text: #ffffff;
 }
 
 body {
@@ -20,6 +21,7 @@ body {
   background-color: var(--bg);
   color: var(--text);
   transition: background-color 0.2s ease, color 0.2s ease;
+  color-scheme: light;
 }
 
 body.dark-mode {
@@ -32,7 +34,9 @@ body.dark-mode {
   --button: #21262d;
   --button-hover: #30363d;
   --shadow: rgba(1, 4, 9, 0.5);
-  --toast-bg: rgba(230, 237, 243, 0.96);
+  --toast-bg: #f0f6fc;
+  --toast-text: #0d1117;
+  color-scheme: dark;
 }
 
 .popup-header {
@@ -119,6 +123,7 @@ button:hover {
   padding: 6px;
   display: none;
   z-index: 10;
+  box-sizing: border-box;
 }
 
 .settings-menu.open {
@@ -138,6 +143,12 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  box-sizing: border-box;
+}
+
+.quick-setting-label {
+  font-weight: 600;
+  min-width: 0;
 }
 
 .menu-item:hover {
@@ -150,13 +161,27 @@ button:hover {
   font-weight: 700;
 }
 
+.quick-color-setting input[type="color"] {
+  width: 28px;
+  height: 20px;
+  padding: 1px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.quick-color-setting {
+  cursor: pointer;
+}
+
 .toast {
   position: fixed;
   left: 50%;
   bottom: 12px;
   transform: translateX(-50%) translateY(10px);
   background: var(--toast-bg);
-  color: var(--bg);
+  color: var(--toast-text);
   padding: 8px 12px;
   border-radius: 999px;
   font-size: 11px;

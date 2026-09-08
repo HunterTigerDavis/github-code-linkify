@@ -1,5 +1,5 @@
 // V0.6: Match real URLs including browser scheme URLs like chrome://extensions/ while excluding file names and version labels
-console.log("Debug: Content script loaded");
+console.debug("Debug: Content script loaded");
 // Matches: https://example.com, www.example.com, gitlab.com/example, chrome://extensions/
 // Excludes: V0.4, plan.md, plan.txt
 const urlRegex = /([a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s"'`<>]+|www\.[^\s"'`<>]+|(?<![A-Za-z0-9])(?:[a-z0-9-]+\.)+(?:com|org|net|io|dev|app|edu|gov|info|ai|co|uk|us|ca|ly|me|biz|tv|de|fr|nl|jp|au|in|cn|xyz|online|shop|pro)(?:[/?#][^\s"'`<>]*)?)/gi;
@@ -44,18 +44,49 @@ CSS.highlights.set("ext-url-highlight", urlHighlight);[1, 3]
 
 // Inject a tiny stylesheet dynamically to color only our highlighted ranges
 const style = document.createElement('style');
-style.textContent = `
-  ::highlight(ext-url-highlight) {
-    color: #ff6b00 !important;
-    text-decoration: underline !important;
-    font-weight: bold !important;
-  }
-`;
 document.head.appendChild(style);
+
+function applyHighlightColor(color) {
+  style.textContent = `
+    ::highlight(ext-url-highlight) {
+      color: ${color} !important;
+      text-decoration: underline !important;
+      font-weight: bold !important;
+    }
+  `;
+}
+
+let codeAwareSettings = ExtensionSettings.normalizeSettings({});
+applyHighlightColor(codeAwareSettings.highlightColor);
+let awarenessActive = false;
+let awarenessListenersAttached = false;
+let mouseMoveFrame = 0;
+let latestMouseEvent;
+let lastPointerKey = '';
+let highlightedUrlKey = '';
+let highlightedTextNode;
+let highlightedContainer;
+
+const settingsReady = ExtensionSettings.readSettings()
+  .then((settings) => {
+    codeAwareSettings = settings;
+    applyHighlightColor(settings.highlightColor);
+  })
+  .catch((error) => {
+    console.warn('Settings unavailable; retaining the last known settings.', error);
+  });
+
+ExtensionSettings.watchSettings((settings) => {
+  codeAwareSettings = settings;
+  applyHighlightColor(settings.highlightColor);
+  refreshPageAwareness();
+});
 
 // TODO: add console log & non-intrusive notification if valid/active PR page, currently uses badge on icon
 async function isCodeAwarePage() {
-  const settings = await ExtensionSettings.readSettings();
+  await settingsReady;
+  const settings = codeAwareSettings;
+
   let isCodeAware = false;
 
   if (settings.enableBaseUrlCheck) {
@@ -66,8 +97,51 @@ async function isCodeAwarePage() {
     isCodeAware = isCodeAware || settings.awareKeywords.some((keyword) => window.location.href.includes(keyword));
   }
 
-  console.log('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware, 'settings:', settings);
+  console.debug('Page URL:', window.location.href, 'Is codeAware page:', isCodeAware, 'Settings:', settings);
   return isCodeAware;
+}
+
+function setAwarenessListeners(active) {
+  if (active === awarenessListenersAttached) {
+    return;
+  }
+
+  if (active) {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseleave', handleDocumentMouseLeave);
+    document.addEventListener('click', handleDocumentClick, true);
+  } else {
+    if (mouseMoveFrame) {
+      cancelAnimationFrame(mouseMoveFrame);
+      mouseMoveFrame = 0;
+    }
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseleave', handleDocumentMouseLeave);
+    document.removeEventListener('click', handleDocumentClick, true);
+    clearUrlHighlight();
+  }
+
+  awarenessListenersAttached = active;
+}
+
+async function refreshPageAwareness() {
+  awarenessActive = await isCodeAwarePage();
+  setAwarenessListeners(awarenessActive);
+}
+
+settingsReady.then(refreshPageAwareness);
+
+function clearUrlHighlight() {
+  if (highlightedUrlKey) {
+    urlHighlight.clear();
+    highlightedUrlKey = '';
+    highlightedTextNode = undefined;
+  }
+
+  if (highlightedContainer) {
+    highlightedContainer.style.removeProperty('cursor');
+    highlightedContainer = undefined;
+  }
 }
 
 // Future use: persist highlights for URLs scanned, found, or clicked on the page.
@@ -98,6 +172,9 @@ function highlightUrlsInTextNodes(root = document.body) {
 
 // Global function to find the exact text node and character index under the cursor
 function getCharIndexUnderMouse(event) {
+  const pointerElement = document.elementFromPoint(event.clientX, event.clientY);
+  if (!pointerElement) return null;
+
   // Use modern caretPositionFromPoint or caretRangeFromPoint to pinpoint the text node [4]
   let range;
   if (document.caretRangeFromPoint) {
@@ -117,9 +194,10 @@ function getCharIndexUnderMouse(event) {
   const parentElement = range.startContainer.parentElement;
   if (!parentElement) return null;
 
-  // Extended selectors to support README paragraphs, code blocks, markdown content, and various GitHub layouts
+  // Extended selectors to support README paragraphs, code blocks, markdown content, and various GitHub layouts for code views & pull requests
   const container = parentElement.closest('td, span, p, li, div, .blob-code-inner, .react-file-line-composition, code, pre');
   if (!container) return null;
+  if (!container.contains(pointerElement)) return null;
 
   return {
     textNode: range.startContainer,
@@ -129,15 +207,31 @@ function getCharIndexUnderMouse(event) {
 }
 
 // 1. Global Mouse Tracking: Highlight ONLY the URL text range under the cursor
-document.addEventListener('mousemove', async (event) => {
-  if (!(await isCodeAwarePage())) {
-    urlHighlight.clear();[2]
-    return;
+function handleMouseMove(event) {
+  latestMouseEvent = event;
+  if (!mouseMoveFrame) {
+    mouseMoveFrame = requestAnimationFrame(processMouseMove);
   }
+}
+
+function handleDocumentMouseLeave() {
+  latestMouseEvent = undefined;
+  lastPointerKey = '';
+  clearUrlHighlight();
+}
+
+function processMouseMove() {
+  mouseMoveFrame = 0;
+  const event = latestMouseEvent;
+  if (!event) return;
+
+  const pointerKey = `${event.clientX}:${event.clientY}`;
+  if (pointerKey === lastPointerKey) return;
+  lastPointerKey = pointerKey;
 
   const pointInfo = getCharIndexUnderMouse(event);
   if (!pointInfo) {
-    urlHighlight.clear();[2]
+    clearUrlHighlight();
     return;
   }
 
@@ -154,9 +248,11 @@ document.addEventListener('mousemove', async (event) => {
     const matchEnd = matchStart + match[0].length;
 
     // Is the user's cursor character index mathematically inside the URL string boundary?
-    if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
-      console.log('Found URL match:', match[0], 'at', matchStart, matchEnd, 'in container:', pointInfo.container);
-      urlHighlight.clear();[2] // Reset previous highlights
+    if (pointInfo.offset >= matchStart && pointInfo.offset < matchEnd) {
+      const urlKey = `${matchStart}:${matchEnd}`;
+      if (textNode === highlightedTextNode && urlKey === highlightedUrlKey) return;
+
+      clearUrlHighlight();
 
       // Create a virtual text selection range exactly over the URL [2]
       const highlightRange = document.createRange();
@@ -166,6 +262,8 @@ document.addEventListener('mousemove', async (event) => {
       // Add the range to our orange CSS highlight register [1, 2]
       urlHighlight.add(highlightRange);[2]
       pointInfo.container.style.setProperty('cursor', 'pointer', 'important');
+      highlightedUrlKey = urlKey;
+      highlightedContainer = pointInfo.container;
       foundMatch = true;
       break;
     }
@@ -173,16 +271,13 @@ document.addEventListener('mousemove', async (event) => {
 
   // Clear highlight if mouse moves away from the URL string
   if (!foundMatch) {
-    console.log('No URL under cursor — clearing highlight');
-    urlHighlight.clear();[2]
-    pointInfo.container.style.removeProperty('cursor');
+    clearUrlHighlight();
   }
-});
+}
 
 // 2. Global Click Capture
-document.addEventListener('click', async (event) => {
-  console.log('Click event detected');
-  if (!(await isCodeAwarePage())) return;
+async function handleDocumentClick(event) {
+  console.debug('Click event detected');
 
   const pointInfo = getCharIndexUnderMouse(event);
   if (!pointInfo) return;
@@ -199,8 +294,8 @@ document.addEventListener('click', async (event) => {
     const matchStart = match.index;
     const matchEnd = matchStart + match[0].length;
 
-    if (pointInfo.offset >= matchStart && pointInfo.offset <= matchEnd) {
-      console.log('Click - URL matches:', match[0]);
+    if (pointInfo.offset >= matchStart && pointInfo.offset < matchEnd) {
+      console.debug('Click - URL matches:', match[0]);
       const destination = normalizeUrlDestination(match[0]);
 
       if (!destination) {
@@ -215,7 +310,7 @@ document.addEventListener('click', async (event) => {
       break;
     }
   }
-}, true);
+}
 
 // Fixed Helper Function: Uses message passing to bypass content script environment limits
 function saveUrlToStorage(url) {
@@ -226,5 +321,5 @@ function saveUrlToStorage(url) {
   }
 }
 
-console.log("Debug: Content script initialized");
+console.debug("Debug: Content script initialized");
 

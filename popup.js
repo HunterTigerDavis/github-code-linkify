@@ -20,38 +20,94 @@ function populateExtensionMeta() {
   });
 }
 
-function getSystemDarkMode() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
+let currentSettings;
 
-async function loadSettings() {
-  const settings = await ExtensionSettings.readSettings();
-  const nextSettings = {
-    ...settings,
-    darkMode: typeof settings.darkMode === 'boolean' ? settings.darkMode : getSystemDarkMode()
-  };
-
-  if (JSON.stringify(settings) !== JSON.stringify(nextSettings)) {
-    ExtensionSettings.writeSettings(nextSettings);
+function getNextSettingValue(definition, currentValue) {
+  if (!definition.options) {
+    return !currentValue;
   }
 
-  return nextSettings;
+  const currentIndex = definition.options.findIndex((option) => option.value === currentValue);
+  const nextIndex = (currentIndex + 1) % definition.options.length;
+  return definition.options[nextIndex].value;
 }
 
-function saveSettings(settings) {
-  ExtensionSettings.writeSettings(settings);
+function renderQuickSettings() {
+  const container = document.getElementById('quick-settings-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  Object.entries(ExtensionSettings.SETTINGS_SCHEMA)
+    .filter(([, definition]) => definition.quick)
+    .forEach(([key, definition]) => {
+      if (definition.type === 'color') {
+        const row = document.createElement('div');
+        row.className = 'menu-item quick-color-setting';
+        row.title = definition.description;
+
+        const label = document.createElement('span');
+        label.className = 'quick-setting-label';
+        label.textContent = definition.label;
+
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.dataset.setting = key;
+        row.addEventListener('click', (event) => {
+          if (event.target !== input) input.click();
+        });
+        const updateColor = async () => {
+          if (currentSettings[key] === input.value) return;
+          const nextSettings = {
+            ...currentSettings,
+            [key]: input.value
+          };
+          currentSettings = await ExtensionSettings.writeSettings(nextSettings);
+          applySettings(currentSettings);
+        };
+        input.addEventListener('input', updateColor);
+        input.addEventListener('change', updateColor);
+
+        row.append(label, input);
+        container.appendChild(row);
+        return;
+      }
+
+      const button = document.createElement('button');
+      button.className = 'menu-item setting-toggle';
+      button.type = 'button';
+      button.dataset.setting = key;
+      button.title = definition.description;
+
+      const label = document.createElement('span');
+      label.textContent = definition.label;
+
+      const state = document.createElement('span');
+      state.className = 'toggle-state';
+
+      button.append(label, state);
+      container.appendChild(button);
+    });
 }
 
 function applySettings(settings) {
-  document.body.classList.toggle('dark-mode', !!settings.darkMode);
+  document.body.classList.toggle('dark-mode', ExtensionSettings.shouldUseDarkMode(settings.darkMode));
 
-  document.querySelectorAll('.setting-toggle').forEach((button) => {
-    const key = button.dataset.setting;
-    const state = !!settings[key];
-    const toggle = button.querySelector('.toggle-state');
+  document.querySelectorAll('.setting-toggle, [data-setting="highlightColor"]').forEach((control) => {
+    const key = control.dataset.setting;
+    const state = settings[key];
+    if (control.matches('input[type="color"]')) {
+      control.value = state;
+      return;
+    }
+
+    const toggle = control.querySelector('.toggle-state');
 
     if (toggle) {
-      toggle.textContent = state ? 'On' : 'Off';
+      const definition = ExtensionSettings.SETTINGS_SCHEMA[key];
+      toggle.textContent = definition.options
+        ? definition.options.find((option) => option.value === state)?.label || state
+        : state ? 'On' : 'Off';
     }
   });
 }
@@ -201,8 +257,9 @@ function recordClickedUrl(url) {
 document.addEventListener('DOMContentLoaded', async () => {
   populateExtensionMeta();
 
-  let settings = await loadSettings();
-  applySettings(settings);
+  currentSettings = await ExtensionSettings.readSettings();
+  renderQuickSettings();
+  applySettings(currentSettings);
 
   const settingsButton = document.getElementById('settings-button');
   const settingsMenu = document.getElementById('settings-menu');
@@ -227,12 +284,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.querySelectorAll('.setting-toggle').forEach((button) => {
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', async (event) => {
       event.stopPropagation();
       const key = button.dataset.setting;
-      settings = { ...settings, [key]: !settings[key] };
-      saveSettings(settings);
-      applySettings(settings);
+      const definition = ExtensionSettings.SETTINGS_SCHEMA[key];
+      currentSettings = {
+        ...currentSettings,
+        [key]: getNextSettingValue(definition, currentSettings[key])
+      };
+      currentSettings = await ExtensionSettings.writeSettings(currentSettings);
+      applySettings(currentSettings);
 
       if (key === 'showBadge') {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -243,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
-      if (key === 'autoScanOnOpen' && settings.autoScanOnOpen) {
+      if (key === 'autoScanOnOpen' && currentSettings.autoScanOnOpen) {
         scanPageForLinks();
       }
     });
@@ -274,8 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const currentSettings = await ExtensionSettings.readSettings();
-      const awareBaseUrls = ExtensionSettings.normalizeAwareHosts(currentSettings.awareBaseUrls || []);
+      const awareBaseUrls = currentSettings.awareBaseUrls;
 
       if (awareBaseUrls.includes(hostname)) {
         showToast(`${hostname} already in awareness`);
@@ -287,7 +347,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         awareBaseUrls: Array.from(new Set([...awareBaseUrls, hostname]))
       };
 
-      ExtensionSettings.writeSettings(nextSettings);
+      currentSettings = await ExtensionSettings.writeSettings(nextSettings);
+      applySettings(currentSettings);
       showToast(`${hostname} added to awareness`);
     });
   }
@@ -295,26 +356,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (shareRepoButton) {
     shareRepoButton.addEventListener('click', async () => {
       settingsMenu.classList.remove('open');
-
-      const repoUrl = chrome.runtime.getManifest().homepage_url || '';
-
-      if (!repoUrl) {
-        showToast('link copied');
-        return;
-      }
-
-      try {
-        await navigator.clipboard.writeText(repoUrl);
-        showToast('link copied');
-      } catch (error) {
-        const tempInput = document.createElement('textarea');
-        tempInput.value = repoUrl;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        showToast('link copied');
-      }
+      const copied = await ExtensionSettings.copyRepositoryUrl();
+      showToast(copied ? 'Link copied' : 'Copy failed');
     });
   }
 
@@ -326,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if (settings.autoScanOnOpen) {
+  if (currentSettings.autoScanOnOpen) {
     scanPageForLinks();
   }
 

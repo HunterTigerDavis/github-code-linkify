@@ -39,29 +39,7 @@
             </button>
 
             <div id="settings-menu" class="settings-menu" role="menu" aria-hidden="true">
-                <button class="menu-item setting-toggle" type="button" data-setting="autoScanOnOpen">
-                    <span>Auto scan on popup open</span>
-                    <span class="toggle-state">On</span>
-                </button>
-                <button class="menu-item setting-toggle" type="button" data-setting="darkMode">
-                    <span>Dark mode</span>
-                    <span class="toggle-state">Off</span>
-                </button>
-                <button class="menu-item setting-toggle" type="button" data-setting="showBadge">
-                    <span>Code-aware badge</span>
-                    <span class="toggle-state">On</span>
-                </button>
-                <button class="menu-item setting-toggle" type="button" data-setting="enableBaseUrlCheck">
-                    <span>Enable base URL awareness</span>
-                    <span class="toggle-state">On</span>
-                </button>
-                <button class="menu-item setting-toggle" type="button" data-setting="enableKeywordCheck">
-                    <span>Enable keyword awareness</span>
-                    <span class="toggle-state">On</span>
-                </button>
-                <button class="menu-item action-item" type="button" id="add-awareness" title="Adds this site's hostname to code awareness so matching pages are treated as code-aware." aria-label="Add current site to awareness">
-                    <span>Add current site to awareness</span>
-                </button>
+                <div id="quick-settings-list"></div>
                 <button class="menu-item action-item" type="button" id="share-repo">
                     <span>Share repo</span>
                 </button>
@@ -78,7 +56,7 @@
         <p id="extension-description">
             <!-- Description: This extension scans the current page for links and displays them in a popup. Click on any link to open it in a new tab, and view your history in the popup! -->
         </p>
-        <button id="scanButton">Scan Links</button>
+        <button id="add-awareness" type="button" title="Adds current site to awareness for link highlighting" aria-label="Add current site to awareness">Add site to awareness</button>
     </div>
     <div class="URLs" style="margin-top: 10px;">
         <h2>
@@ -87,9 +65,10 @@
         </h2>
         <!-- Changed container from a <ul> to a flexible display <div> -->
         <div id="list-container"></div>
+        <button id="scanButton" type="button" title="Scan the current page for links">Scan Links</button>
         <h3>Scanned URLs found on tab:</h3>
         <ul id="urlList">
-            <li>Insert list of URLs here</li>
+            <li>Scanned URLs with button above will show up here</li>
         </ul>
 
     </div>
