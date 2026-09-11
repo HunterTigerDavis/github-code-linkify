@@ -33,15 +33,17 @@ Custom sites and keywords can be managed from **Settings > Advanced settings**. 
 
 <small> Installation works on all major browsers, including Edge, Safari, and Brave. Typing `chrome://extensions` in a Chromium-based browser will direct you to that browser's extensions page.</small>
 
-1. Clone or download this repository.
-2. Open your browser's extensions page, either:
+1. Clone or download this repository:
+	- Command line/Terminal: ```git clone https://github.com/HunterTigerDavis/github-code-linkify```
+	- If downloading as ZIP, extract files to a new folder.
+3. Open your browser's extensions page, either:
     - Open `chrome://extensions/` in search bar 
 	- Click the extension icon in the browser bar, or open it through the browser settings.
-3. Enable **Developer mode** to allow local extension installation.
-4. Select **Load unpacked**.
-5. Choose the project directory folder containing `manifest.json`.
-6. Open the extension popup and use the gear menu for quick settings or **Advanced settings** for the full configuration page.
-7. Pin the extension to taskbar for ease of use.
+4. Enable **Developer mode** toggle to allow local extension installation.
+5. Select **Load unpacked**.
+6. Choose the project folder containing `manifest.json` (default: github-code-linkify).
+7. Open the extension popup and use the gear menu for quick settings or **Advanced settings** for the full configuration page.
+8. Pin the extension to browser for ease of use & activity badge.
 
 ## ⚙️ Using the extension
 
@@ -53,6 +55,8 @@ Custom sites and keywords can be managed from **Settings > Advanced settings**. 
 6. Use the options page to add, remove, or clear aware sites and keywords.
 
 ## 💾 Settings and data
+
+***DATA PRIVACY: Your personal data is never saved or sold from this extension. All data is saved locally on your browser and never sold to 3rd parties.***
 
 Settings are managed centrally by `settings.js` and stored as separate `chrome.storage.local` keys:
 
@@ -67,8 +71,6 @@ Settings are managed centrally by `settings.js` and stored as separate `chrome.s
 The popup and options page both use the shared settings API. The content script reads the same values when deciding whether the current page is code-aware. `chrome.storage.onChanged` keeps active extension contexts synchronized.
 
 Clicked URL history is stored separately under `clickedUrls`. It can be cleared entirely from the popup or by hostname in the popup's saved-link groups.
-
-Extension metadata such as the name, version, description, and repository URL is read directly from the manifest with `chrome.runtime.getManifest()` rather than stored as user data.
 
 ## 🧩 Project structure
 
